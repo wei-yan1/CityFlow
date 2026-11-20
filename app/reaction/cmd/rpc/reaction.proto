@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package reaction;
+option go_package = "cityflow/app/reaction/cmd/rpc/pb";
+
+message HealthReq {}
+message HealthResp {
+  bool ok = 1;
+  string message = 2;
+}
+
+message SetReactionReq {
+  string target_type = 1;
+  string target_id = 2;
+  string kind = 3;
+  bool active = 4;
+}
+
+message SetReactionResp {
+  bool active = 1;
+  int64 count = 2;
+}
+
+message ReactionStateReq {
+  string target_type = 1;
+  string kind = 2;
+  repeated string target_ids = 3;
+}
+
+message ReactionStateItem {
+  string target_id = 1;
+  int64 count = 2;
+  bool liked = 3;
+}
+
+message ReactionStateResp {
+  repeated ReactionStateItem items = 1;
+}
+
+message ListMineReq {
+  string kind = 1;
+  string target_type = 2;
+  string cursor = 3;
+  int32 limit = 4;
+}
+
+message ListMineItem {
+  string target_id = 1;
+  int64 created_at_ms = 2;
+}
+
+message ListMineResp {
+  repeated ListMineItem items = 1;
+  string next_cursor = 2;
+}
+
+service Reaction {
+  rpc SetReaction(SetReactionReq) returns (SetReactionResp);
+  rpc GetReactionState(ReactionStateReq) returns (ReactionStateResp);
+  rpc ListMine(ListMineReq) returns (ListMineResp);
+  rpc Health(HealthReq) returns (HealthResp);
+}

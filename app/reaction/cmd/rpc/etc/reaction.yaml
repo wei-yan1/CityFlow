@@ -1,0 +1,35 @@
+Name: reaction-rpc
+ListenOn: 127.0.0.1:8097
+Timeout: 0
+Mode: dev
+
+DataSource:
+
+JWTSecret:
+
+IdentityRPC:
+  Endpoints:
+    - 127.0.0.1:8090
+  NonBlock: true
+  Timeout: 800
+
+ReactionRedis:
+  Host: 127.0.0.1:6380
+  Password:
+  DB: 0
+
+MySQL:
+  DSN:
+
+RabbitMQ:
+  URL:
+  Exchange: cf.events
+
+ProjectionTypes:
+  - PLACE_REVIEW
+WorkersEnabled: true
+TickerSeconds: 5
+TickerBatchSize: 1000
+OpsBatchSize: 1000
+OpsBlockMillis: 200
+MaxSummaryIDs: 50

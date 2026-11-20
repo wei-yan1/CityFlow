@@ -1,0 +1,27 @@
+Name: task.rpc
+ListenOn: 0.0.0.0:8091
+Mode: dev
+Timeout: 10000
+DataSource: ""
+JWTSecret: ""
+RabbitMQURL: ""
+TrustedPlaceTTL: 1800
+IdentityRPC:
+  Endpoints:
+    - 127.0.0.1:8090
+  NonBlock: true
+DiscoveryRPC:
+  Endpoints:
+    - 127.0.0.1:8092
+  NonBlock: true
+  Timeout: 5000
+PaymentRPC:
+  Endpoints:
+    - 127.0.0.1:8094
+  NonBlock: true
+  Timeout: 5000
+ReactionRPC:
+  Endpoints:
+    - 127.0.0.1:8097
+  NonBlock: true
+  Timeout: 800

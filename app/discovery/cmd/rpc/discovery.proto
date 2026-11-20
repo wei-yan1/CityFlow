@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package discovery;
+option go_package = "cityflow/app/discovery/cmd/rpc/pb";
+
+message Empty {}
+message HealthReply { bool ok = 1; string message = 2; }
+message JsonBody { bytes body_json = 1; }
+message JsonReply { bytes body_json = 1; }
+message IdRequest { string id = 1; }
+message IdBody { string id = 1; bytes body_json = 2; }
+message ListQuery { string status = 1; int32 limit = 2; int32 offset = 3; }
+message AdminReviewQuery { string source = 1; string place_id = 2; int32 limit = 3; int32 offset = 4; }
+message QueryRequest { bytes query_json = 1; }
+message PlaceRequest { string source = 1; string id = 2; string user_id = 3; int32 offset = 4; bytes body_json = 5; }
+message CommentRequest { string review_id = 1; string parent_id = 2; bytes body_json = 3; }
+message CommentListRequest { string review_id = 1; string cursor = 2; int32 limit = 3; }
+message CommentThreadRequest { string review_id = 1; string root_id = 2; int32 limit = 3; }
+message UploadRequest { bytes data = 1; string content_type = 2; }
+
+service Discovery {
+  rpc Health(Empty) returns (HealthReply);
+
+  rpc GetMyMerchant(IdRequest) returns (JsonReply);
+  rpc CreateMyMerchant(IdBody) returns (JsonReply);
+  rpc UpdateMyMerchant(IdBody) returns (JsonReply);
+  rpc ArchiveMyMerchant(IdRequest) returns (JsonReply);
+  rpc GetMyMedia(IdRequest) returns (JsonReply);
+  rpc SaveMyMedia(IdBody) returns (JsonReply);
+  rpc UploadImage(UploadRequest) returns (JsonReply);
+
+  rpc MapConfig(Empty) returns (JsonReply);
+  rpc MapMerchants(Empty) returns (JsonReply);
+  rpc MapSearch(QueryRequest) returns (JsonReply);
+  rpc MapNearby(QueryRequest) returns (JsonReply);
+  rpc MapRiding(QueryRequest) returns (JsonReply);
+  rpc MapCity(QueryRequest) returns (JsonReply);
+  rpc MapReverse(QueryRequest) returns (JsonReply);
+  rpc MapDistrict(QueryRequest) returns (JsonReply);
+
+  rpc PlaceDetail(PlaceRequest) returns (JsonReply);
+  rpc CreatePlaceReview(PlaceRequest) returns (JsonReply);
+  rpc DeleteReview(IdBody) returns (JsonReply);
+  rpc CreatePlaceComment(CommentRequest) returns (JsonReply);
+  rpc ListPlaceComments(CommentListRequest) returns (JsonReply);
+  rpc ListPlaceCommentThread(CommentThreadRequest) returns (JsonReply);
+  rpc HidePlaceComment(CommentRequest) returns (JsonReply);
+  rpc MerchantReviewTarget(IdBody) returns (JsonReply);
+  rpc CreateTaskMerchantReview(IdBody) returns (JsonReply);
+  rpc ListMyMerchantReviews(ListQuery) returns (JsonReply);
+  rpc ListPlaceReviewsAdmin(AdminReviewQuery) returns (JsonReply);
+  rpc RevealPlaceReviewIdentity(IdBody) returns (JsonReply);
+
+  rpc ListMerchants(ListQuery) returns (JsonReply);
+  rpc CreateMerchant(IdBody) returns (JsonReply);
+  rpc GetMerchantAdmin(IdRequest) returns (JsonReply);
+  rpc UpdateMerchant(IdBody) returns (JsonReply);
+  rpc ArchiveMerchant(IdRequest) returns (JsonReply);
+
+  rpc FindTrustedPlacesInternal(JsonBody) returns (JsonReply);
+  rpc SaveTrustedPlacesInternal(JsonBody) returns (JsonReply);
+  rpc InvalidateMapCache(Empty) returns (JsonReply);
+}

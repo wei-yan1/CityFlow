@@ -1,0 +1,19 @@
+# Local development and generated files
+.env
+.env.*.local
+deploy/rabbitmq.env
+configs/map.local.json
+bin/
+logs/
+data/
+uploads/
+coverage.out
+*.test
+*.exe
+*.log
+.gocache/
+.gotmp/
+.DS_Store
+Thumbs.db
+
+.idea/

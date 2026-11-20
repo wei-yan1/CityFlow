@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#173039">
+  <title>骑手注册 · CityFlow</title>
+  <link rel="stylesheet" href="/assets/shared/app.css?v=20261114-pay1">
+  <link rel="stylesheet" href="/assets/rider/register.css?v=20261114-rider-reg1">
+</head>
+<body class="rider-register-page">
+  <main class="register-shell">
+    <section class="register-hero">
+      <div>
+        <a class="brand register-brand" href="/login"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>CITYFLOW<small>骑手注册</small></span></a>
+        <p class="eyebrow">RIDER ONBOARDING</p>
+        <h1>先付 1 分钱注册费，<br>再开通骑手账号。</h1>
+        <p class="register-lead">这是个人经营码，没有支付回调。你付款后提交交易号或付款备注，平台管理员在支付宝账单核验通过后，才会创建骑手账号。</p>
+      </div>
+      <ol class="register-steps">
+        <li><span>01</span><div><strong>扫码支付</strong><p>支付宝扫描右侧经营码，金额至少 ¥0.01，付款说明写你的邮箱前缀或手机号后四位。</p></div></li>
+        <li><span>02</span><div><strong>提交资料</strong><p>填写登录邮箱、密码和骑手资料，提交支付宝交易号或付款备注。</p></div></li>
+        <li><span>03</span><div><strong>等待核验</strong><p>管理员核对账单后开通账号；开通后用邮箱和密码登录骑手工作台。</p></div></li>
+      </ol>
+      <p class="register-foot">个人项目 · 最小可用 · 不支持自动退款</p>
+    </section>
+
+    <section class="register-panel">
+      <div class="pay-card">
+        <img src="/assets/rider/registration-qr-card.jpg" alt="支付宝经营收款码" width="893" height="808">
+        <div>
+          <p class="eyebrow">STEP 01 · PAY</p>
+          <h2>支付宝扫码支付</h2>
+          <p>最低金额 <strong>¥0.01</strong>。付款说明请填写你的邮箱前缀或手机号后四位，方便核对。</p>
+          <p class="pay-warning">这是个人经营码，不会自动回调。没有交易凭证的申请不会开通。</p>
+        </div>
+      </div>
+
+      <form id="registrationForm" class="register-form" novalidate>
+        <div class="form-heading">
+          <div><p class="eyebrow">STEP 02 · APPLY</p><h2>骑手注册资料</h2></div>
+          <span class="form-badge">人工核验</span>
+        </div>
+
+        <div class="form-grid">
+          <label class="field">姓名<input name="display_name" type="text" maxlength="80" autocomplete="name" required placeholder="用于骑手资料展示"></label>
+          <label class="field">登录邮箱<input name="email" type="email" autocomplete="email" required placeholder="name@example.com"></label>
+          <label class="field">登录密码<input name="password" type="password" minlength="8" autocomplete="new-password" required placeholder="至少 8 位"></label>
+          <label class="field">手机号<input name="phone" type="tel" maxlength="32" autocomplete="tel" placeholder="选填"></label>
+          <label class="field">车辆类型<select name="vehicle_type" required><option value="E_BIKE">电动车</option><option value="BICYCLE">自行车</option><option value="WALK">步行</option><option value="CAR">汽车</option><option value="OTHER">其他</option></select></label>
+          <label class="field">服务区域<input name="service_area" type="text" maxlength="160" placeholder="例如：桂林电子科技大学周边"></label>
+          <label class="field full">服务类型<input name="skills" type="text" required value="DELIVERY, PICKUP" placeholder="DELIVERY, PICKUP"></label>
+          <label class="field">最大服务距离（米）<input name="max_distance_meters" type="number" min="1" max="100000" step="1" value="5000" required></label>
+          <label class="field">最大并行任务<input name="max_concurrent_tasks" type="number" min="1" max="20" step="1" value="3" required></label>
+          <label class="field">支付金额（元）<input name="paid_amount" type="number" min="0.01" step="0.01" value="0.01" required inputmode="decimal"></label>
+          <label class="field full">支付宝交易号 / 付款备注<input name="payment_reference" type="text" maxlength="128" required placeholder="例如：2026111422001234567890 或 邮箱前缀"></label>
+          <label class="field full">补充说明<input name="payment_note" type="text" maxlength="255" placeholder="付款账户姓名、付款时间等，选填"></label>
+        </div>
+
+        <label class="confirm-row"><input name="confirmed" type="checkbox" required><span>我已支付至少 ¥0.01，并确认提交的凭证真实有效。</span></label>
+        <button id="submitRegistration" class="button primary full" type="submit">提交注册申请</button>
+        <p id="message" class="message" role="status" aria-live="polite"></p>
+        <p class="register-small">已有账号？<a href="/login">返回登录</a>。开通后使用注册邮箱和密码登录。</p>
+      </form>
+
+      <section id="successPanel" class="success-panel" hidden aria-live="polite">
+        <p class="eyebrow">APPLICATION RECEIVED</p>
+        <h2>申请已提交</h2>
+        <p>平台管理员会核对支付宝账单。核验通过后，你的骑手账号会自动开通；届时用注册邮箱和密码登录即可。</p>
+        <p id="successReference" class="success-reference"></p>
+        <button id="backToLogin" class="button primary" type="button">返回登录</button>
+      </section>
+    </section>
+  </main>
+  <script src="/assets/shared/common.js?v=20261114-wheel1" defer></script>
+  <script src="/assets/rider/register.js?v=20261114-rider-reg1" defer></script>
+</body>
+</html>

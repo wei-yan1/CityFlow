@@ -1,0 +1,19 @@
+Name: payment.rpc
+ListenOn: 0.0.0.0:8094
+Mode: dev
+Timeout: 10000
+DataSource: ""
+JWTSecret: ""
+RabbitMQURL: ""
+IdentityRPC:
+  Endpoints:
+    - 127.0.0.1:8090
+  NonBlock: true
+TaskRPC:
+  Endpoints:
+    - 127.0.0.1:8091
+  NonBlock: true
+Provider: MOCK
+ExpiryMinutes: 30
+SettleIntervalSeconds: 30
+AllowMockPay: true

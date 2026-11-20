@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package payment;
+option go_package = "cityflow/app/payment/cmd/rpc/pb";
+
+message Empty {}
+message HealthReply { bool ok = 1; string message = 2; }
+message JsonBody { bytes body_json = 1; }
+message JsonReply { bytes body_json = 1; }
+message IdRequest { string id = 1; }
+message IdBody { string id = 1; bytes body_json = 2; }
+message ListQuery { string status = 1; int32 limit = 2; int32 offset = 3; }
+message NotifyRequest { string provider = 1; bytes headers_json = 2; bytes body = 3; }
+
+service Payment {
+  rpc Health(Empty) returns (HealthReply);
+  rpc Summary(IdRequest) returns (JsonReply);
+  rpc CreateCharge(IdBody) returns (JsonReply);
+  rpc MockPay(IdRequest) returns (JsonReply);
+  rpc Sync(IdRequest) returns (JsonReply);
+  rpc Refund(IdBody) returns (JsonReply);
+  rpc Notify(NotifyRequest) returns (JsonReply);
+  rpc Settlements(ListQuery) returns (JsonReply);
+  rpc GetPayoutAccount(Empty) returns (JsonReply);
+  rpc SavePayoutAccount(JsonBody) returns (JsonReply);
+  rpc CouponsAvailable(ListQuery) returns (JsonReply);
+  rpc CouponsMine(ListQuery) returns (JsonReply);
+  rpc ClaimCoupon(IdRequest) returns (JsonReply);
+  rpc CouponsForTask(IdRequest) returns (JsonReply);
+
+  rpc TaskPaymentStateInternal(IdRequest) returns (JsonReply);
+  rpc EnsureSettlementInternal(JsonBody) returns (JsonReply);
+  rpc RefundForTaskInternal(JsonBody) returns (JsonReply);
+}
