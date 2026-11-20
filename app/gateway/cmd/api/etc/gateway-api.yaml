@@ -1,0 +1,46 @@
+Name: gateway-api
+Host: 0.0.0.0
+Port: 8087
+Timeout: 0
+MaxConns: 200
+Middlewares:
+  Log: false
+  Recover: false
+# Gateway verifies access tokens locally; this must match Identity/Task.
+JWTSecret: ""
+AuthStatusCacheTTLSeconds: 5
+RateLimitRPS: 100
+RateLimitBurst: 200
+RequestTimeoutSeconds: 15
+StartupReadyTimeoutSeconds: 60
+IdentityRPC:
+  Endpoints:
+    - 127.0.0.1:8090
+  NonBlock: true
+  Timeout: 5000
+TaskRPC:
+  Endpoints:
+    - 127.0.0.1:8091
+  NonBlock: true
+  Timeout: 5000
+DiscoveryRPC:
+  Endpoints:
+    - 127.0.0.1:8092
+  NonBlock: true
+  Timeout: 5000
+PaymentRPC:
+  Endpoints:
+    - 127.0.0.1:8094
+  NonBlock: true
+  Timeout: 5000
+TrackingRPC:
+  Endpoints:
+    - 127.0.0.1:8095
+  NonBlock: true
+  Timeout: 5000
+ReactionRPC:
+  Endpoints:
+    - 127.0.0.1:8097
+  NonBlock: true
+  Timeout: 800
+TrackingStreamURL: http://127.0.0.1:8093

@@ -1,0 +1,23 @@
+Name: discovery.rpc
+ListenOn: 0.0.0.0:8092
+Mode: dev
+Timeout: 10000
+DataSource: ""
+JWTSecret: ""
+UploadDir: "uploads"
+MapConfig: "configs/map.local.json"
+TrustedTTL: 1800
+IdentityRPC:
+  Endpoints:
+    - 127.0.0.1:8090
+  NonBlock: true
+TaskRPC:
+  Endpoints:
+    - 127.0.0.1:8091
+  NonBlock: true
+ReactionRPC:
+  Endpoints:
+    - 127.0.0.1:8097
+  NonBlock: true
+  Timeout: 800
+RabbitMQURL: ""

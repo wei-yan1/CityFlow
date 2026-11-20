@@ -1,0 +1,89 @@
+body.rider-register-page {
+  min-height: 100vh;
+  margin: 0;
+  padding: 28px;
+  color: var(--ink);
+  background: #e9eee8;
+}
+
+.register-shell {
+  width: min(1180px, calc(100% - 8px));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(300px, .82fr) minmax(420px, 1.18fr);
+  overflow: hidden;
+  border: 1px solid #d7e0d8;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.register-hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 30px;
+  padding: 44px;
+  color: #f3f5eb;
+  background:
+    radial-gradient(circle at 100% 100%, #bbd66a22 0 20%, transparent 21%),
+    radial-gradient(circle at 100% 100%, #bbd66a12 0 36%, transparent 37%),
+    var(--ink);
+}
+
+.register-brand { color: #f3f5eb; }
+.register-brand .brand-mark i { background: #c6e07a; }
+.register-hero h1 { margin: 0; font-size: clamp(30px, 3.4vw, 40px); line-height: 1.08; letter-spacing: -.06em; }
+.register-lead { max-width: 450px; margin: 20px 0 0; color: #c0ccc4; font-size: 14px; line-height: 1.8; }
+.register-steps { display: grid; gap: 18px; margin: 30px 0 0; padding: 0; list-style: none; }
+.register-steps li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; align-items: start; }
+.register-steps li > span { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid #ffffff3d; border-radius: 50%; color: #d6e59c; font-size: 10px; font-weight: 800; }
+.register-steps strong { display: block; color: #f3f5eb; font-size: 13px; }
+.register-steps p { margin: 5px 0 0; color: #aebcb5; font-size: 12px; line-height: 1.7; }
+.register-foot { margin: auto 0 0; color: #8ea09a; font-size: 11px; }
+
+.register-panel { min-width: 0; padding: 34px; background: #fbfcfa; }
+.pay-card { display: grid; grid-template-columns: minmax(150px, 220px) minmax(0, 1fr); gap: 22px; align-items: center; padding: 18px; border: 1px solid #d7e4d9; border-radius: 14px; background: #fff; }
+.pay-card img { width: 100%; max-height: 260px; object-fit: contain; border-radius: 10px; background: #fff; }
+.pay-card h2 { margin: 0; font-size: 21px; letter-spacing: -.035em; }
+.pay-card p { margin: 8px 0 0; color: #52675d; font-size: 12px; line-height: 1.7; }
+.pay-card .pay-warning { color: #9b4e39; }
+.pay-card strong { color: #1c5e51; }
+
+.register-form { margin-top: 26px; padding: 24px; border: 1px solid #dce6de; border-radius: 14px; background: #fff; }
+.form-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding-bottom: 8px; }
+.form-heading h2 { margin: 0; font-size: 21px; letter-spacing: -.035em; }
+.form-badge { padding: 6px 9px; border-radius: 999px; color: #456656; background: #edf4e8; font-size: 10px; white-space: nowrap; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.form-grid .field { margin: 12px 0; }
+.form-grid .field.full { grid-column: 1 / -1; }
+.confirm-row { display: flex; gap: 9px; align-items: flex-start; margin: 10px 0 16px; color: #53675e; font-size: 12px; line-height: 1.6; }
+.confirm-row input { margin-top: 3px; accent-color: var(--forest); }
+.register-form .message { min-height: 20px; margin: 10px 0 0; }
+.register-small { margin: 11px 0 0; color: #7b8c82; font-size: 11px; }
+.register-small a { color: var(--forest-dark); font-weight: 700; }
+
+.success-panel { margin-top: 26px; padding: 30px; border: 1px solid #cfe3d1; border-radius: 14px; background: #f1f8ef; }
+.success-panel h2 { margin: 0 0 10px; font-size: 24px; letter-spacing: -.04em; }
+.success-panel p { color: #486557; font-size: 13px; line-height: 1.8; }
+.success-reference { padding: 9px 11px; border-radius: 8px; background: #e3f1df; color: #2b5c43 !important; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px !important; overflow-wrap: anywhere; }
+
+@media (max-width: 880px) {
+  body.rider-register-page { padding: 14px; }
+  .register-shell { grid-template-columns: 1fr; width: 100%; }
+  .register-hero { padding: 30px; }
+  .register-steps { grid-template-columns: 1fr; }
+  .register-panel { padding: 18px; }
+  .pay-card { grid-template-columns: 150px minmax(0, 1fr); gap: 14px; }
+  .pay-card img { max-height: 190px; }
+}
+
+@media (max-width: 600px) {
+  .register-hero h1 { font-size: 31px; }
+  .pay-card { grid-template-columns: 1fr; }
+  .pay-card img { max-height: 240px; max-width: 240px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .form-grid .field.full { grid-column: auto; }
+  .register-panel { padding: 12px; }
+  .register-form { padding: 18px; }
+}

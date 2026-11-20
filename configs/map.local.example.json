@@ -1,0 +1,25 @@
+{
+  "provider": "amap",
+  "map_service_provider": "hybrid",
+  "postgis_dsn": "postgres://cityflow:CHANGE_ME_POSTGIS_PASSWORD@127.0.0.1:5434/cityflow_map?sslmode=disable",
+  "default_city": "桂林市",
+  "default_adcode": "450300",
+  "default_latitude": 25.274,
+  "default_longitude": 110.290,
+  "amap_js_key": "your-web-js-api-key",
+  "amap_security_code": "your-js-security-code",
+  "amap_web_service_key": "your-web-service-key",
+  "tile_url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+  "attribution": "© OpenStreetMap contributors",
+  "match_url": "",
+  "cache": {
+    "budget_mb": 128,
+    "provider_requests_per_minute": 60,
+    "amap_allowed": false,
+    "district_ttl_seconds": 3600,
+    "search_ttl_seconds": 300,
+    "city_ttl_seconds": 600,
+    "route_ttl_seconds": 60,
+    "hot_cities": ["450300", "桂林", "桂林市"]
+  }
+}

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#182b32">
+  <title>我的优惠券 · CityFlow</title>
+  <link rel="stylesheet" href="/assets/shared/app.css?v=20261114-coupon1">
+  <link rel="stylesheet" href="/assets/coupons/coupons.css?v=20261114-coupon4">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/user"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>CITYFLOW<small>我的优惠券</small></span></a>
+    <div class="top-actions">
+      <span id="welcome" class="welcome"></span>
+      <a class="button outline" href="/user">返回工作台</a>
+      <a class="button subtle" href="/coupons">领券中心</a>
+      <button class="button outline" data-logout>退出</button>
+    </div>
+  </header>
+  <main class="coupon-page">
+    <section class="coupon-hero" aria-labelledby="mineTitle">
+      <div class="coupon-hero-copy">
+        <p class="coupon-kicker">MY COUPONS</p>
+        <h1 id="mineTitle">你的配送优惠</h1>
+        <p class="coupon-hero-sub">这里按领取记录展示每一张券的真实状态：未使用、支付中锁定、已核销或已过期。支付时只展示当前任务真正能用的券。</p>
+      </div>
+      <div class="coupon-metrics" aria-label="我的优惠券概览">
+        <div class="coupon-metric"><strong id="unusedCount">—</strong><span>未使用</span></div>
+        <div class="coupon-metric"><strong id="usedCount">—</strong><span>已使用</span></div>
+        <div class="coupon-metric"><strong id="lockedCount">—</strong><span>支付中</span></div>
+        <div class="coupon-metric"><strong id="savedTotal">—</strong><span>累计已省</span></div>
+      </div>
+    </section>
+    <nav class="coupon-tabs" aria-label="优惠券页面">
+      <a href="/coupons">领券中心</a>
+      <a href="/coupons/mine" aria-current="page">我的优惠券<span id="mineTabCount" class="coupon-tab-count" hidden>0</span></a>
+    </nav>
+    <div id="notice" class="notice" role="status" aria-live="polite"></div>
+    <div class="coupon-list-toolbar">
+      <p id="couponSummary">正在加载你的优惠券…</p>
+      <div class="coupon-filters" role="group" aria-label="筛选优惠券状态">
+        <button type="button" class="coupon-filter" data-status="" aria-pressed="true">全部</button>
+        <button type="button" class="coupon-filter" data-status="UNUSED" aria-pressed="false">未使用</button>
+        <button type="button" class="coupon-filter" data-status="LOCKED" aria-pressed="false">支付中</button>
+        <button type="button" class="coupon-filter" data-status="USED" aria-pressed="false">已使用</button>
+        <button type="button" class="coupon-filter" data-status="EXPIRED" aria-pressed="false">已过期</button>
+      </div>
+    </div>
+    <section id="couponGrid" class="coupon-grid" aria-live="polite" aria-busy="true">
+      <div class="coupon-empty"><strong>正在读取你的优惠券…</strong><p>正在获取领取记录和核销状态。</p></div>
+    </section>
+    <p class="coupon-mine-note">已使用的券可在对应订单中看到优惠明细；支付失败或关闭的订单会自动把锁定券释放回未使用。</p>
+  </main>
+  <div id="couponToast" class="coupon-toast" role="status" aria-live="polite"></div>
+  <script src="/assets/shared/common.js?v=20261114-wheel1" defer></script>
+  <script src="/assets/coupons/coupons.js?v=20261114-coupon3" defer></script>
+</body>
+</html>

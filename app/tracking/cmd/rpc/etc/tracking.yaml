@@ -1,0 +1,18 @@
+Name: tracking.rpc
+ListenOn: 0.0.0.0:8095
+StreamListen: 127.0.0.1:8093
+Mode: dev
+Timeout: 10000
+JWTSecret: ""
+RedisAddr: ""
+RedisDB: 0
+IdentityRPC:
+  Endpoints:
+    - 127.0.0.1:8090
+  NonBlock: true
+  Timeout: 5000
+TaskRPC:
+  Endpoints:
+    - 127.0.0.1:8091
+  NonBlock: true
+  Timeout: 5000

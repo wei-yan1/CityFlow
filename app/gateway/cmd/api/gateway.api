@@ -1,0 +1,1158 @@
+syntax = "v1"
+
+info (
+	title:   "CityFlow API Gateway"
+	desc:    "Public REST contract for the go-zero Gateway service"
+	author:  "CityFlow"
+	version: "v1"
+)
+
+type User {
+	ID        string `json:"id"`
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	Phone     string `json:"phone,optional"`
+	AvatarURL string `json:"avatar_url,optional"`
+	Role      string `json:"role"`
+	Status    string `json:"status"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type LoginRequest {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type RegisterRequest {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Name     string `json:"name"`
+	Phone    string `json:"phone,optional"`
+}
+
+type PasswordResetRequest {
+	Email string `json:"email"`
+}
+
+type PasswordResetResult {
+	Email     string `json:"email"`
+	ExpiresAt string `json:"expires_at,optional"`
+	DevToken  string `json:"dev_token,optional"`
+	Message   string `json:"message"`
+}
+
+type PasswordResetConfirmRequest {
+	Email       string `json:"email"`
+	Token       string `json:"token"`
+	NewPassword string `json:"new_password"`
+}
+
+type UserUpdateRequest {
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	Phone     string `json:"phone,optional"`
+	AvatarURL string `json:"avatar_url,optional"`
+}
+
+type AdminCreateUserRequest {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Name     string `json:"name"`
+	Phone    string `json:"phone,optional"`
+	Role     string `json:"role"`
+}
+
+type AdminUserListResponse {
+	Data   []User `json:"data"`
+	Limit  int    `json:"limit"`
+	Offset int    `json:"offset"`
+}
+
+type RiderRegistrationInput {
+	Email              string   `json:"email"`
+	Password           string   `json:"password"`
+	DisplayName        string   `json:"display_name"`
+	Phone              string   `json:"phone,optional"`
+	VehicleType        string   `json:"vehicle_type"`
+	Skills             []string `json:"skills,optional"`
+	ServiceArea        string   `json:"service_area,optional"`
+	MaxDistanceMeters  int      `json:"max_distance_meters,optional"`
+	MaxConcurrentTasks int      `json:"max_concurrent_tasks,optional"`
+	PaidAmountFen      int64    `json:"paid_amount_fen"`
+	PaymentReference   string   `json:"payment_reference"`
+	PaymentNote        string   `json:"payment_note,optional"`
+}
+
+type RiderRegistration {
+	ID                 string     `json:"id"`
+	Email              string     `json:"email"`
+	Phone              string     `json:"phone,optional"`
+	DisplayName        string     `json:"display_name"`
+	VehicleType        string     `json:"vehicle_type"`
+	Skills             []string   `json:"skills"`
+	ServiceArea        string     `json:"service_area,optional"`
+	MaxDistanceMeters  int        `json:"max_distance_meters"`
+	MaxConcurrentTasks int        `json:"max_concurrent_tasks"`
+	PaidAmountFen      int64      `json:"paid_amount_fen"`
+	PaymentReference   string     `json:"payment_reference"`
+	PaymentNote        string     `json:"payment_note,optional"`
+	Status             string     `json:"status"`
+	ReviewNote         string     `json:"review_note,optional"`
+	ReviewedBy         string     `json:"reviewed_by,optional"`
+	ReviewedAt         string     `json:"reviewed_at,optional"`
+	UserID             string     `json:"user_id,optional"`
+	CreatedAt          string     `json:"created_at"`
+	UpdatedAt          string     `json:"updated_at"`
+}
+
+type RiderRegistrationListResponse {
+	Data   []RiderRegistration `json:"data"`
+	Limit  int                 `json:"limit"`
+	Offset int                 `json:"offset"`
+}
+
+type RiderProfile {
+	ID                 string   `json:"id"`
+	UserID             string   `json:"user_id"`
+	DisplayName        string   `json:"display_name"`
+	VehicleType        string   `json:"vehicle_type"`
+	Skills             []string `json:"skills,optional"`
+	ServiceArea        string   `json:"service_area,optional"`
+	MaxDistanceMeters  int      `json:"max_distance_meters"`
+	MaxConcurrentTasks int      `json:"max_concurrent_tasks"`
+	Status             string   `json:"status"`
+	Rating             float64  `json:"rating"`
+	CompletedTasks     int      `json:"completed_tasks"`
+	CreatedAt          string   `json:"created_at"`
+	UpdatedAt          string   `json:"updated_at"`
+}
+
+type RiderUpdateRequest {
+	DisplayName        string   `json:"display_name"`
+	VehicleType        string   `json:"vehicle_type"`
+	Skills             []string `json:"skills"`
+	ServiceArea        string   `json:"service_area,optional"`
+	MaxDistanceMeters  int      `json:"max_distance_meters"`
+	MaxConcurrentTasks int      `json:"max_concurrent_tasks"`
+}
+
+type RiderStatusRequest {
+	Status string `json:"status"`
+}
+
+type AdminCreateRiderRequest {
+	UserID             string   `json:"user_id"`
+	DisplayName        string   `json:"display_name"`
+	VehicleType        string   `json:"vehicle_type"`
+	Skills             []string `json:"skills"`
+	ServiceArea        string   `json:"service_area,optional"`
+	MaxDistanceMeters  int      `json:"max_distance_meters"`
+	MaxConcurrentTasks int      `json:"max_concurrent_tasks"`
+}
+
+type RiderListResponse {
+	Data   []RiderProfile `json:"data"`
+	Limit  int            `json:"limit"`
+	Offset int            `json:"offset"`
+}
+
+type TaskRiderView {
+	TaskID    string      `json:"task_id"`
+	Status    string      `json:"status"`
+	Rider     RiderProfile `json:"rider"`
+	CanReview bool        `json:"can_review"`
+	CanTip    bool        `json:"can_tip"`
+	CanReport bool        `json:"can_report"`
+	CanCall   bool        `json:"can_call"`
+}
+
+type RiderFeedbackRequest {
+	Rating    int      `json:"rating,optional"`
+	Comment   string   `json:"comment,optional"`
+	AmountFen int64    `json:"amount_fen,optional"`
+	Message   string   `json:"message,optional"`
+	Reason    string   `json:"reason,optional"`
+	Details   string   `json:"details,optional"`
+	Images    []string `json:"images,optional"`
+}
+
+type RiderFeedbackRecord {
+	ID             string   `json:"id"`
+	RiderID        string   `json:"rider_id"`
+	TaskID         string   `json:"task_id"`
+	UserID         string   `json:"user_id"`
+	Kind           string   `json:"kind"`
+	Rating         int      `json:"rating,optional"`
+	AmountFen      int64    `json:"amount_fen,optional"`
+	Comment        string   `json:"comment,optional"`
+	Reason         string   `json:"reason,optional"`
+	Details        string   `json:"details,optional"`
+	Images         []string `json:"images,optional"`
+	Status         string   `json:"status"`
+	ResolutionNote string   `json:"resolution_note,optional"`
+	ResolvedBy     string   `json:"resolved_by,optional"`
+	CreatedAt      string   `json:"created_at"`
+	UpdatedAt      string   `json:"updated_at"`
+}
+
+type PublicRiderFeedback {
+	ID          string `json:"id"`
+	AuthorLabel string `json:"author_label"`
+	Rating      int    `json:"rating,optional"`
+	AmountFen   int64  `json:"amount_fen,optional"`
+	Comment     string `json:"comment,optional"`
+	Date        string `json:"date"`
+}
+
+type PublicRider {
+	ID             string               `json:"id"`
+	DisplayName    string               `json:"display_name"`
+	AvatarURL      string               `json:"avatar_url,optional"`
+	VehicleType    string               `json:"vehicle_type"`
+	ServiceArea    string               `json:"service_area,optional"`
+	Skills         []string             `json:"skills,optional"`
+	Status         string               `json:"status"`
+	Rating         float64              `json:"rating"`
+	CompletedTasks int                  `json:"completed_tasks"`
+	ReviewCount    int                  `json:"review_count"`
+	TipTotalFen    int64                `json:"tip_total_fen"`
+	Reviews        []PublicRiderFeedback `json:"reviews,optional"`
+	Tips           []PublicRiderFeedback `json:"tips,optional"`
+}
+
+type IncidentInput {
+	Kind      string   `json:"kind"`
+	Note      string   `json:"note,optional"`
+	ImageURLs []string `json:"image_urls,optional"`
+}
+
+type Incident {
+	ID           string   `json:"id"`
+	TaskID       string   `json:"task_id"`
+	ReporterID   string   `json:"reporter_id"`
+	ReporterRole string   `json:"reporter_role"`
+	Kind         string   `json:"kind"`
+	Note         string   `json:"note,optional"`
+	ImageURLs    []string `json:"image_urls,optional"`
+	Status       string   `json:"status"`
+	Resolution   string   `json:"resolution,optional"`
+	ResolvedBy   string   `json:"resolved_by,optional"`
+	CreatedAt    string   `json:"created_at"`
+}
+
+type IncidentResolutionRequest {
+	Resolution string `json:"resolution"`
+	Cancel     bool   `json:"cancel,optional"`
+}
+
+type IncidentListResponse {
+	Data   []Incident `json:"data"`
+	Limit  int        `json:"limit"`
+	Offset int        `json:"offset"`
+}
+
+type RiderReportListResponse {
+	Data   []RiderFeedbackRecord `json:"data"`
+	Limit  int                   `json:"limit"`
+	Offset int                   `json:"offset"`
+}
+
+type RiderReportResolutionRequest {
+	Status string `json:"status"`
+	Note   string `json:"note,optional"`
+}
+
+type MerchantReview {
+	ID          string `json:"id"`
+	AuthorLabel string `json:"author_label"`
+	Anonymous   bool   `json:"anonymous"`
+	Rating      int    `json:"rating"`
+	Comment     string `json:"comment"`
+	Date        string `json:"date"`
+	Likes       int    `json:"likes"`
+}
+
+type MerchantReviewListResponse {
+	Data   []MerchantReview `json:"data"`
+	Limit  int              `json:"limit"`
+	Offset int              `json:"offset"`
+}
+
+type AdminReview {
+	ID           string `json:"id"`
+	AuthorLabel  string `json:"author_label"`
+	Anonymous    bool   `json:"anonymous"`
+	UserIDMasked string `json:"user_id_masked"`
+	OrderID      string `json:"order_id"`
+	Rating       int    `json:"rating"`
+	Comment      string `json:"comment"`
+	CreatedAt    string `json:"created_at"`
+}
+
+type AdminReviewListResponse {
+	Data   []AdminReview `json:"data"`
+	Total  int           `json:"total"`
+	Limit  int           `json:"limit"`
+	Offset int           `json:"offset"`
+}
+
+type ReviewRevealRequest {
+	Reason string `json:"reason"`
+}
+
+type ReviewIdentityUser {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Phone string `json:"phone,optional"`
+}
+
+type ReviewIdentity {
+	ReviewID string             `json:"review_id"`
+	Action   string             `json:"action"`
+	User     ReviewIdentityUser `json:"user"`
+}
+
+type ReviewNoteRequest {
+	Note string `json:"note,optional"`
+}
+
+type AuthResponse {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+	ExpiresAt   string `json:"expires_at"`
+	User        User   `json:"user"`
+}
+
+type Empty {}
+
+type HealthResponse {
+	Status string `json:"status"`
+}
+
+type Point {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+}
+
+type PickupStop {
+	POIID    string `json:"poi_id,optional"`
+	Address  string `json:"address"`
+	Location Point  `json:"location,optional"`
+	PickupAt string `json:"pickup_at,optional"`
+	Status   string `json:"status,optional"`
+}
+
+type TaskEvent {
+	From      string `json:"from"`
+	To        string `json:"to"`
+	ActorID   string `json:"actor_id,optional"`
+	CreatedAt string `json:"created_at"`
+}
+
+type TaskIncident {
+	ID           string   `json:"id"`
+	TaskID       string   `json:"task_id"`
+	ReporterID   string   `json:"reporter_id"`
+	ReporterRole string   `json:"reporter_role"`
+	Kind         string   `json:"kind"`
+	Note         string   `json:"note"`
+	ImageURLs    []string `json:"image_urls,optional"`
+	Status       string   `json:"status"`
+	Resolution   string   `json:"resolution,optional"`
+	ResolvedBy   string   `json:"resolved_by,optional"`
+	CreatedAt    string   `json:"created_at"`
+	ResolvedAt   string   `json:"resolved_at,optional"`
+}
+
+type TaskInput {
+	QuotedAmountFen     int64        `json:"quoted_amount_fen,optional"`
+	DestinationPOIID    string       `json:"destination_poi_id,optional"`
+	PickupStops         []PickupStop `json:"pickup_stops,optional"`
+	DeliveryAt          string       `json:"delivery_at,optional"`
+	PickupLocation      Point        `json:"pickup_location,optional"`
+	DestinationLocation Point        `json:"destination_location,optional"`
+	Title               string       `json:"title"`
+	Description         string       `json:"description,optional"`
+	ContactName         string       `json:"contact_name,optional"`
+	ContactPhone        string       `json:"contact_phone,optional"`
+	HandoverNote        string       `json:"handover_note,optional"`
+	Type                string       `json:"type"`
+	Priority            int          `json:"priority,optional"`
+	Pickup              string       `json:"pickup"`
+	Destination         string       `json:"destination"`
+}
+
+type StatusRequest {
+	Status string `json:"status"`
+}
+
+type PickupStatusRequest {
+	Status string `json:"status"`
+}
+
+type Task {
+	QuotedAmountFen     int64          `json:"quoted_amount_fen,optional"`
+	DestinationPOIID    string         `json:"destination_poi_id,optional"`
+	PickupStops         []PickupStop   `json:"pickup_stops,optional"`
+	DeliveryAt          string         `json:"delivery_at,optional"`
+	PickupLocation      Point          `json:"pickup_location,optional"`
+	DestinationLocation Point          `json:"destination_location,optional"`
+	ID                  string         `json:"id"`
+	Title               string         `json:"title"`
+	Description         string         `json:"description,optional"`
+	ContactName         string         `json:"contact_name,optional"`
+	ContactPhone        string         `json:"contact_phone,optional"`
+	HandoverNote        string         `json:"handover_note,optional"`
+	Type                string         `json:"type"`
+	Priority            int            `json:"priority"`
+	Pickup              string         `json:"pickup"`
+	Destination         string         `json:"destination"`
+	Status              string         `json:"status"`
+	CreatedBy           string         `json:"created_by"`
+	WorkerID            string         `json:"worker_id,optional"`
+	CreatedAt           string         `json:"created_at"`
+	UpdatedAt           string         `json:"updated_at"`
+	Events              []TaskEvent    `json:"events"`
+	Incidents           []TaskIncident `json:"incidents,optional"`
+}
+
+type TaskListResponse {
+	Data   []Task `json:"data"`
+	Limit  int    `json:"limit"`
+	Offset int    `json:"offset"`
+}
+
+type LocationReport {
+	TaskID     string  `json:"task_id,optional"`
+	Latitude   float64 `json:"latitude"`
+	Longitude  float64 `json:"longitude"`
+	Source     string  `json:"source,optional"`
+	Accuracy   float64 `json:"accuracy,optional"`
+	ObservedAt string  `json:"observed_at,optional"`
+}
+
+type RiderPosition {
+	Source     string  `json:"source"`
+	RiderID    string  `json:"rider_id"`
+	TaskID     string  `json:"task_id,optional"`
+	Latitude   float64 `json:"latitude"`
+	Longitude  float64 `json:"longitude"`
+	Accuracy   float64 `json:"accuracy"`
+	ObservedAt string  `json:"observed_at"`
+	UpdatedAt  string  `json:"updated_at"`
+	Version    int64   `json:"version"`
+}
+
+type TrackPoint {
+	ID         uint64  `json:"id"`
+	TaskID     string  `json:"task_id"`
+	Source     string  `json:"source"`
+	RiderID    string  `json:"rider_id"`
+	Latitude   float64 `json:"latitude"`
+	Longitude  float64 `json:"longitude"`
+	Accuracy   float64 `json:"accuracy"`
+	ObservedAt string  `json:"observed_at"`
+	UpdatedAt  string  `json:"updated_at"`
+	Version    int64   `json:"version"`
+}
+
+type LocationHistoryResponse {
+	Data             []TrackPoint `json:"data"`
+	CoordinateSystem string       `json:"coordinate_system"`
+	NextCursor       uint64       `json:"next_cursor"`
+	HasMore          bool         `json:"has_more"`
+}
+
+type NearbyRidersResponse {
+	Data []RiderPosition `json:"data"`
+}
+
+type MerchantProfile {
+	ID              string   `json:"id"`
+	UserID          string   `json:"user_id"`
+	Name            string   `json:"name"`
+	Description     string   `json:"description,optional"`
+	Phone           string   `json:"phone,optional"`
+	Address         string   `json:"address,optional"`
+	AMAPPOIID       string   `json:"amap_poi_id,optional"`
+	Latitude        float64  `json:"latitude"`
+	Longitude       float64  `json:"longitude"`
+	BusinessStatus  string   `json:"business_status"`
+	ServiceTypes    []string `json:"service_types"`
+	CapacityPerHour int      `json:"capacity_per_hour"`
+	CreatedAt       string   `json:"created_at,optional"`
+	UpdatedAt       string   `json:"updated_at,optional"`
+}
+
+type MerchantInput {
+	Name            string   `json:"name"`
+	Description     string   `json:"description,optional"`
+	Phone           string   `json:"phone,optional"`
+	Address         string   `json:"address"`
+	AMAPPOIID       string   `json:"amap_poi_id,optional"`
+	Latitude        float64  `json:"latitude"`
+	Longitude       float64  `json:"longitude"`
+	BusinessStatus  string   `json:"business_status"`
+	ServiceTypes    []string `json:"service_types"`
+	CapacityPerHour int      `json:"capacity_per_hour,optional"`
+}
+
+type AdminCreateMerchantRequest {
+	UserID string `json:"user_id"`
+	MerchantInput
+}
+
+type MerchantListResponse {
+	Data   []MerchantProfile `json:"data"`
+	Limit  int               `json:"limit"`
+	Offset int               `json:"offset"`
+}
+
+type MerchantMediaResponse {
+	AvatarURL string   `json:"avatar_url"`
+	ImageURLs []string `json:"image_urls"`
+}
+
+type MerchantMediaInput {
+	AvatarURL string   `json:"avatar_url"`
+	ImageURLs []string `json:"image_urls"`
+}
+
+type MapConfigResponse {
+	CityConfigured   bool    `json:"city_configured"`
+	SearchConfigured bool    `json:"search_configured"`
+	RidingConfigured bool    `json:"riding_configured"`
+	CityEnabled      bool    `json:"city_enabled"`
+	DefaultCity      string  `json:"default_city"`
+	DefaultAdcode    string  `json:"default_adcode"`
+	DefaultCenter    MapPoint `json:"default_center"`
+	Provider         string  `json:"provider"`
+	AmapJSKey        string  `json:"amap_js_key,optional"`
+	AmapSecurityCode string  `json:"amap_security_code,optional"`
+	SearchEnabled    bool    `json:"search_enabled"`
+	RidingEnabled    bool    `json:"riding_enabled"`
+	TileURL          string  `json:"tile_url"`
+	Attribution      string  `json:"attribution"`
+}
+
+type MapPoint {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+}
+
+type MapMerchant {
+	ID       string   `json:"id"`
+	Name     string   `json:"name"`
+	Category string   `json:"category,optional"`
+	Address  string   `json:"address,optional"`
+	Location MapPoint `json:"location"`
+	Count    int      `json:"count,optional"`
+}
+
+type MapMerchantResponse {
+	Data             []MapMerchant `json:"data"`
+	Truncated        bool          `json:"truncated"`
+	CoordinateSystem string        `json:"coordinate_system"`
+}
+
+type MapRidingRequest {
+	Origin           MapPoint `json:"origin"`
+	Destination      MapPoint `json:"destination"`
+	CoordinateSystem string   `json:"coordinate_system"`
+	Mode             string   `json:"mode,optional"`
+}
+
+type PlaceReview {
+	ID          string `json:"id"`
+	AuthorLabel string `json:"author_label"`
+	Anonymous   bool   `json:"anonymous"`
+	Rating      int    `json:"rating"`
+	Comment     string `json:"comment"`
+	Date        string `json:"date"`
+	Likes       int    `json:"likes"`
+	Liked       bool   `json:"liked"`
+	Mine        bool   `json:"mine"`
+}
+
+type PlaceReviewRequest {
+	Rating    int    `json:"rating"`
+	Comment   string `json:"comment,optional"`
+	OrderID   string `json:"order_id,optional"`
+	Anonymous bool   `json:"anonymous,optional"`
+}
+
+type CommentRequest {
+	Content   string `json:"content"`
+	Anonymous bool   `json:"anonymous,optional"`
+	ParentID  string `json:"parent_id,optional"`
+}
+
+type Comment {
+	ID           string `json:"id"`
+	AuthorLabel  string `json:"author_label"`
+	Anonymous    bool   `json:"anonymous"`
+	Content      string `json:"content"`
+	Date         string `json:"date"`
+	RootID       string `json:"root_id"`
+	ParentID     string `json:"parent_id,optional"`
+	Depth        int    `json:"depth"`
+	ReplyToLabel string `json:"reply_to_label,optional"`
+	ReplyCount   int    `json:"reply_count,optional"`
+	Likes        int    `json:"likes"`
+	Liked        bool   `json:"liked"`
+}
+
+type CommentListResponse {
+	Items      []Comment `json:"items"`
+	NextCursor string    `json:"next_cursor,optional"`
+}
+
+type ReactionRequest {
+	TargetType string `json:"target_type"`
+	TargetID   string `json:"target_id"`
+	Kind       string `json:"kind"`
+	Active     bool   `json:"active"`
+}
+
+type ReactionStateResponse {
+	TargetID string `json:"target_id"`
+	Count    int64  `json:"count"`
+	Liked    bool   `json:"liked"`
+}
+
+type ReactionStateList {
+	Items []ReactionStateResponse `json:"items"`
+}
+
+type MineReaction {
+	TargetID    string `json:"target_id"`
+	CreatedAtMs int64  `json:"created_at_ms"`
+}
+
+type MineReactionList {
+	Items      []MineReaction `json:"items"`
+	NextCursor string         `json:"next_cursor,optional"`
+}
+
+type DiscoveryPlace {
+	ID             string        `json:"id"`
+	Source         string        `json:"source"`
+	Name           string        `json:"name"`
+	Address        string        `json:"address,optional"`
+	Description    string        `json:"description,optional"`
+	BusinessStatus string        `json:"business_status,optional"`
+	AMAPPOIID      string        `json:"amap_poi_id,optional"`
+	Rating         float64       `json:"rating"`
+	ReviewCount    int           `json:"review_count"`
+	Reviews        []PlaceReview `json:"reviews,optional"`
+	Reviewed       bool          `json:"reviewed,optional"`
+	AvatarURL      string        `json:"avatar_url,optional"`
+	ImageURLs      []string      `json:"image_urls,optional"`
+}
+
+type UploadResponse {
+	URL string `json:"url"`
+}
+
+type MapSearchResponse {
+	Provider         string          `json:"provider"`
+	CoordinateSystem string          `json:"coordinate_system"`
+	Data             []DiscoveryPlace `json:"data"`
+}
+
+type MapRouteResponse {
+	Provider         string     `json:"provider"`
+	CoordinateSystem string     `json:"coordinate_system"`
+	Coordinates      []MapPoint `json:"coordinates"`
+	DistanceMeters   int        `json:"distance_meters"`
+	DurationSeconds  int        `json:"duration_seconds"`
+	Instructions     []string   `json:"instructions,optional"`
+}
+
+type MapCityResponse {
+	Name             string    `json:"name"`
+	Adcode           string    `json:"adcode"`
+	Center           MapPoint  `json:"center,optional"`
+	CoordinateSystem string    `json:"coordinate_system"`
+}
+
+type MapDistrictResponse {
+	Name             string       `json:"name"`
+	Adcode           string       `json:"adcode"`
+	Center           MapPoint     `json:"center,optional"`
+	CoordinateSystem string       `json:"coordinate_system"`
+	Boundaries       [][]MapPoint `json:"boundaries"`
+}
+
+type MapAddressResponse {
+	Address string `json:"address"`
+}
+
+type PaymentChargeRequest {
+	Provider       string `json:"provider,optional"`
+	UserCouponID   string `json:"user_coupon_id,optional"`
+	IdempotencyKey string `json:"idempotency_key,optional"`
+}
+
+type PaymentOrder {
+	ID                string `json:"id"`
+	TaskID            string `json:"task_id"`
+	PayerID           string `json:"payer_id"`
+	AmountFen         int64  `json:"amount_fen"`
+	OriginalAmountFen int64  `json:"original_amount_fen"`
+	DiscountFen       int64  `json:"discount_fen"`
+	Currency          string `json:"currency"`
+	Status            string `json:"status"`
+	Provider          string `json:"provider"`
+	ProviderOrderNo   string `json:"provider_order_no"`
+	QRCode            string `json:"qr_code,optional"`
+	PayURL            string `json:"pay_url,optional"`
+	ExpiresAt         string `json:"expires_at,optional"`
+}
+
+type PaymentChargeResponse {
+	Payment     PaymentOrder `json:"payment"`
+	QRCode      string       `json:"qr_code,optional"`
+	PayURL      string       `json:"pay_url,optional"`
+	ExpiresAt   string       `json:"expires_at,optional"`
+	AlreadyPaid bool         `json:"already_paid,optional"`
+}
+
+type PaymentSummaryResponse {
+	Payment    PaymentOrder      `json:"payment,optional"`
+	Settlement PaymentSettlement `json:"settlement,optional"`
+}
+
+type PaymentSettlement {
+	ID             string `json:"id"`
+	TaskID         string `json:"task_id"`
+	PaymentOrderID string `json:"payment_order_id"`
+	RiderID        string `json:"rider_id"`
+	AmountFen      int64  `json:"amount_fen"`
+	Status         string `json:"status"`
+	Provider       string `json:"provider,optional"`
+}
+
+type PaymentRefundRequest {
+	Reason string `json:"reason,optional"`
+}
+
+type PaymentMutationResponse {
+	Payment PaymentOrder `json:"payment"`
+}
+
+type Settlement {
+	ID             string `json:"id"`
+	TaskID         string `json:"task_id"`
+	PaymentOrderID string `json:"payment_order_id"`
+	RiderID        string `json:"rider_id"`
+	AmountFen      int64  `json:"amount_fen"`
+	Status         string `json:"status"`
+	Provider       string `json:"provider,optional"`
+}
+
+type SettlementListResponse {
+	Data   []Settlement `json:"data"`
+	Limit  int          `json:"limit"`
+	Offset int          `json:"offset"`
+}
+
+type PayoutAccountRequest {
+	Provider    string `json:"provider"`
+	Account     string `json:"account"`
+	AccountName string `json:"account_name,optional"`
+}
+
+type PayoutAccount {
+	Provider    string `json:"provider"`
+	Account     string `json:"account"`
+	AccountName string `json:"account_name,optional"`
+}
+
+type Coupon {
+	ID             string `json:"id"`
+	Code           string `json:"code"`
+	Title          string `json:"title"`
+	Subtitle       string `json:"subtitle,optional"`
+	Description    string `json:"description,optional"`
+	Type           string `json:"type"`
+	ValueFen       int64  `json:"value_fen"`
+	DiscountPercent int   `json:"discount_percent"`
+	MaxDiscountFen int64  `json:"max_discount_fen"`
+	MinSpendFen    int64  `json:"min_spend_fen"`
+	Status         string `json:"status"`
+}
+
+type CouponListResponse {
+	Data   []Coupon `json:"data"`
+	Limit  int      `json:"limit"`
+	Offset int      `json:"offset"`
+}
+
+type CouponClaim {
+	ID            string `json:"id"`
+	CouponID      string `json:"coupon_id"`
+	UserID        string `json:"user_id"`
+	Status        string `json:"status"`
+	TaskID        string `json:"task_id,optional"`
+	DiscountFen   int64  `json:"discount_fen"`
+	ClaimedAt     string `json:"claimed_at"`
+	UsedAt        string `json:"used_at,optional"`
+}
+
+type CouponQuote {
+	UserCoupon    CouponClaim `json:"user_coupon"`
+	Coupon        Coupon      `json:"coupon"`
+	OriginalAmountFen int64   `json:"original_amount_fen"`
+	DiscountFen   int64       `json:"discount_fen"`
+	PayableAmountFen int64    `json:"payable_amount_fen"`
+}
+
+type CouponQuoteResponse {
+	Data []CouponQuote `json:"data"`
+}
+
+
+
+service gateway-api {
+
+	@handler Health
+	get /healthz (Empty) returns (HealthResponse)
+
+	@handler Ready
+	get /readyz (Empty) returns (HealthResponse)
+
+	@handler Login
+	post /api/v1/auth/login (LoginRequest) returns (AuthResponse)
+
+	@handler Refresh
+	post /api/v1/auth/refresh (Empty) returns (AuthResponse)
+
+	// Logout returns 204 No Content; the empty type keeps goctl validation
+	// compatible while the handler writes the empty status directly.
+	@handler Logout
+	post /api/v1/auth/logout (Empty) returns (Empty)
+
+	@handler Register
+	post /api/v1/auth/register (RegisterRequest) returns (User)
+
+	@handler RequestPasswordReset
+	post /api/v1/auth/password-reset/request (PasswordResetRequest) returns (PasswordResetResult)
+
+	@handler ResetPassword
+	post /api/v1/auth/password-reset/confirm (PasswordResetConfirmRequest) returns (Empty)
+
+	// Rider registration is public: the applicant has no account until an
+	// administrator verifies the payment receipt.
+	@handler SubmitRiderRegistration
+	post /api/v1/rider-registrations (RiderRegistrationInput) returns (RiderRegistration)
+
+	@handler PaymentNotify
+	post /api/v1/payment-notify/:provider (Empty) returns (Empty)
+
+	@handler Me
+	get /api/v1/auth/me (Empty) returns (User)
+
+	@handler UserProfile
+	get /api/v1/users/me (Empty) returns (User)
+
+	@handler UpdateUserProfile
+	put /api/v1/users/me (UserUpdateRequest) returns (User)
+
+	@handler ListUsers
+	get /api/v1/platform/users (Empty) returns (AdminUserListResponse)
+
+	@handler CreateUser
+	post /api/v1/platform/users (AdminCreateUserRequest) returns (User)
+
+	@handler GetUser
+	get /api/v1/platform/users/:id (Empty) returns (User)
+
+	@handler UpdateUser
+	put /api/v1/platform/users/:id (UserUpdateRequest) returns (User)
+
+	@handler DisableUser
+	delete /api/v1/platform/users/:id (Empty) returns (User)
+
+	@handler ListRiderRegistrations
+	get /api/v1/platform/rider-registrations (Empty) returns (RiderRegistrationListResponse)
+
+	@handler ApproveRiderRegistration
+	post /api/v1/platform/rider-registrations/:id/approve (ReviewNoteRequest) returns (RiderRegistration)
+
+	@handler RejectRiderRegistration
+	post /api/v1/platform/rider-registrations/:id/reject (ReviewNoteRequest) returns (RiderRegistration)
+
+	@handler ListTasks
+	get /api/v1/tasks (Empty) returns (TaskListResponse)
+
+	@handler CreateTask
+	post /api/v1/tasks (TaskInput) returns (Task)
+
+	@handler GetTask
+	get /api/v1/tasks/:id (Empty) returns (Task)
+
+	@handler UpdateTask
+	put /api/v1/tasks/:id (TaskInput) returns (Task)
+
+	@handler PatchTask
+	patch /api/v1/tasks/:id (TaskInput) returns (Task)
+
+	@handler CancelTask
+	delete /api/v1/tasks/:id (Empty) returns (Task)
+
+	@handler ClaimTask
+	post /api/v1/tasks/:id/claim (Empty) returns (Task)
+
+	@handler UpdateTaskStatus
+	post /api/v1/tasks/:id/status (StatusRequest) returns (Task)
+
+	@handler AdvancePickup
+	post /api/v1/tasks/:id/pickups/:index (PickupStatusRequest) returns (Task)
+
+	@handler TaskLocation
+	get /api/v1/tasks/:id/location (Empty) returns (RiderPosition)
+
+	@handler TaskLocationHistory
+	get /api/v1/tasks/:id/history (Empty) returns (LocationHistoryResponse)
+
+	@handler NearbyRiders
+	get /api/v1/platform/rider-locations (Empty) returns (NearbyRidersResponse)
+
+	@handler GetTaskPayment
+	get /api/v1/tasks/:id/payment (Empty) returns (PaymentSummaryResponse)
+
+	@handler CreateTaskPayment
+	post /api/v1/tasks/:id/payment (PaymentChargeRequest) returns (PaymentChargeResponse)
+
+	@handler MockPay
+	post /api/v1/payments/:id/mock-pay (Empty) returns (PaymentMutationResponse)
+
+	@handler SyncPayment
+	post /api/v1/payments/:id/sync (Empty) returns (PaymentMutationResponse)
+
+	@handler RefundPayment
+	post /api/v1/payments/:id/refund (PaymentRefundRequest) returns (PaymentMutationResponse)
+
+	@handler ListCoupons
+	get /api/v1/coupons (Empty) returns (CouponListResponse)
+
+	@handler ListMyCoupons
+	get /api/v1/coupons/mine (Empty) returns (CouponListResponse)
+
+	@handler ClaimCoupon
+	post /api/v1/coupons/:id/claim (Empty) returns (CouponClaim)
+
+	@handler TaskCoupons
+	get /api/v1/coupons/task/:taskId (Empty) returns (CouponQuoteResponse)
+
+	@handler RiderSettlements
+	get /api/v1/riders/me/settlements (Empty) returns (SettlementListResponse)
+
+	@handler GetPayoutAccount
+	get /api/v1/riders/me/payout-account (Empty) returns (PayoutAccount)
+
+	@handler SavePayoutAccount
+	put /api/v1/riders/me/payout-account (PayoutAccountRequest) returns (PayoutAccount)
+
+	@handler RiderMe
+	get /api/v1/riders/me (Empty) returns (RiderProfile)
+
+	@handler UpdateRiderMe
+	put /api/v1/riders/me (RiderUpdateRequest) returns (RiderProfile)
+
+	@handler UpdateRiderStatus
+	put /api/v1/riders/me/status (RiderStatusRequest) returns (RiderProfile)
+
+	@handler ArchiveRiderMe
+	delete /api/v1/riders/me (Empty) returns (Empty)
+
+	@handler ReportLocation
+	post /api/v1/riders/me/location (LocationReport) returns (RiderPosition)
+
+	@handler TaskRider
+	get /api/v1/tasks/:id/rider (Empty) returns (TaskRiderView)
+
+	@handler PublicRider
+	get /api/v1/rider-profiles/:id (Empty) returns (PublicRider)
+
+	@handler CreateRiderReview
+	post /api/v1/tasks/:id/rider/reviews (RiderFeedbackRequest) returns (RiderFeedbackRecord)
+
+	@handler CreateRiderTip
+	post /api/v1/tasks/:id/rider/tip (RiderFeedbackRequest) returns (RiderFeedbackRecord)
+
+	@handler CreateRiderReport
+	post /api/v1/tasks/:id/rider/reports (RiderFeedbackRequest) returns (RiderFeedbackRecord)
+
+	@handler CallRider
+	post /api/v1/tasks/:id/call-rider (Empty) returns (RiderFeedbackRecord)
+
+	@handler CreateTaskIncident
+	post /api/v1/tasks/:id/incidents (IncidentInput) returns (Incident)
+
+	@handler ResolveTaskIncident
+	post /api/v1/tasks/:id/incidents/:incidentId/resolve (IncidentResolutionRequest) returns (Task)
+
+	@handler ListTaskIncidents
+	get /api/v1/platform/task-incidents (Empty) returns (IncidentListResponse)
+
+	@handler ListRiders
+	get /api/v1/platform/riders (Empty) returns (RiderListResponse)
+
+	@handler CreateRider
+	post /api/v1/platform/riders (AdminCreateRiderRequest) returns (RiderProfile)
+
+	@handler GetRider
+	get /api/v1/platform/riders/:id (Empty) returns (RiderProfile)
+
+	@handler UpdateRider
+	put /api/v1/platform/riders/:id (RiderUpdateRequest) returns (RiderProfile)
+
+	@handler ArchiveRider
+	delete /api/v1/platform/riders/:id (Empty) returns (Empty)
+
+	@handler ListRiderReports
+	get /api/v1/platform/rider-reports (Empty) returns (RiderReportListResponse)
+
+	@handler ResolveRiderReport
+	patch /api/v1/platform/rider-reports/:id (RiderReportResolutionRequest) returns (RiderFeedbackRecord)
+
+	@handler MapConfig
+	get /api/v1/map/config (Empty) returns (MapConfigResponse)
+
+	@handler MapMerchants
+	get /api/v1/map/merchants (Empty) returns (MapMerchantResponse)
+
+	@handler MapSearch
+	get /api/v1/map/search (Empty) returns (MapSearchResponse)
+
+	@handler MapNearby
+	get /api/v1/map/nearby (Empty) returns (MapSearchResponse)
+
+	@handler MapRiding
+	post /api/v1/map/riding (MapRidingRequest) returns (MapRouteResponse)
+
+	@handler MapCity
+	get /api/v1/map/city (Empty) returns (MapCityResponse)
+
+	@handler MapReverse
+	get /api/v1/map/reverse (Empty) returns (MapAddressResponse)
+
+	// Retained pages still call the old alias; both bind to the Discovery RPC.
+	@handler LegacyMapReverseAddress
+	get /api/v1/map/reverse-address (Empty) returns (MapAddressResponse)
+
+	@handler MapDistrict
+	get /api/v1/map/district (Empty) returns (MapDistrictResponse)
+
+	@handler PlaceDetail
+	get /api/v1/places/:source/:id (Empty) returns (DiscoveryPlace)
+
+	// Static merchant uploads live at the edge; Discovery remains the writer.
+	@handler UploadedFile
+	get /uploads/:file (Empty) returns (Empty)
+
+	@handler MerchantMe
+	get /api/v1/merchants/me (Empty) returns (MerchantProfile)
+
+	@handler CreateMerchantMe
+	post /api/v1/merchants/me (MerchantInput) returns (MerchantProfile)
+
+	@handler UpdateMerchantMe
+	put /api/v1/merchants/me (MerchantInput) returns (MerchantProfile)
+
+	@handler DeleteMerchantMe
+	delete /api/v1/merchants/me (Empty) returns (Empty)
+
+	@handler MerchantMedia
+	get /api/v1/merchants/me/media (Empty) returns (MerchantMediaResponse)
+
+	@handler SaveMerchantMedia
+	put /api/v1/merchants/me/media (MerchantMediaInput) returns (Empty)
+
+	@handler UploadMerchantImage
+	post /api/v1/merchants/me/media/upload (Empty) returns (UploadResponse)
+
+	// Compatibility alias for the retained rider incident-image upload.
+	@handler LegacyUploadImage
+	post /api/v1/uploads (Empty) returns (UploadResponse)
+
+	@handler CreatePlaceReview
+	post /api/v1/places/:source/:id/reviews (PlaceReviewRequest) returns (Empty)
+
+	@handler DeletePlaceReview
+	delete /api/v1/reviews/:id (Empty) returns (Empty)
+
+	@handler ListPlaceComments
+	get /api/v1/reviews/:id/comments (Empty) returns (CommentListResponse)
+
+	@handler ListPlaceCommentThread
+	get /api/v1/reviews/:id/comments/:rootId/thread (Empty) returns (CommentListResponse)
+
+	@handler SetReaction
+	post /api/v1/reactions (ReactionRequest) returns (ReactionStateResponse)
+
+	@handler GetReactionState
+	get /api/v1/reactions/state (Empty) returns (ReactionStateList)
+
+	@handler ListMineReactions
+	get /api/v1/reactions/mine (Empty) returns (MineReactionList)
+
+	@handler CreatePlaceComment
+	post /api/v1/reviews/:id/comments (CommentRequest) returns (Comment)
+
+	@handler HidePlaceComment
+	delete /api/v1/reviews/:id/comments/:commentId (Empty) returns (Empty)
+
+	@handler ListRiderComments
+	get /api/v1/rider-feedback/:id/comments (Empty) returns (CommentListResponse)
+
+	@handler ListRiderCommentThread
+	get /api/v1/rider-feedback/:id/comments/:rootId/thread (Empty) returns (CommentListResponse)
+
+	@handler CreateRiderComment
+	post /api/v1/rider-feedback/:id/comments (CommentRequest) returns (Comment)
+
+	@handler HideRiderComment
+	delete /api/v1/rider-feedback/:id/comments/:commentId (Empty) returns (Empty)
+
+	@handler TaskReviewTarget
+	get /api/v1/tasks/:id/reviews/target (Empty) returns (DiscoveryPlace)
+
+	// Compatibility aliases used by the retained order page.
+	@handler LegacyTaskReviewTarget
+	get /api/v1/tasks/:id/merchant-review-target (Empty) returns (DiscoveryPlace)
+
+	@handler CreateTaskMerchantReview
+	post /api/v1/tasks/:id/reviews (PlaceReviewRequest) returns (PlaceReview)
+
+	@handler LegacyTaskMerchantReview
+	post /api/v1/tasks/:id/merchant-reviews (PlaceReviewRequest) returns (PlaceReview)
+
+	@handler ListMyMerchantReviews
+	get /api/v1/merchants/me/reviews (Empty) returns (MerchantReviewListResponse)
+
+	@handler ListPlaceReviewsAdmin
+	get /api/v1/platform/reviews (Empty) returns (AdminReviewListResponse)
+
+	@handler RevealPlaceReviewIdentity
+	post /api/v1/platform/reviews/:id/reveal (ReviewRevealRequest) returns (ReviewIdentity)
+
+	@handler ListMerchants
+	get /api/v1/platform/merchants (Empty) returns (MerchantListResponse)
+
+	@handler CreateMerchant
+	post /api/v1/platform/merchants (AdminCreateMerchantRequest) returns (MerchantProfile)
+
+	@handler GetMerchant
+	get /api/v1/platform/merchants/:id (Empty) returns (MerchantProfile)
+
+	@handler UpdateMerchant
+	put /api/v1/platform/merchants/:id (MerchantInput) returns (MerchantProfile)
+
+	@handler DeleteMerchant
+	delete /api/v1/platform/merchants/:id (Empty) returns (Empty)
+}
+

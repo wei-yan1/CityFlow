@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+package task;
+
+option go_package = "cityflow/app/task/cmd/rpc/pb;task";
+
+message Empty {}
+
+message HealthReply {
+  bool ok = 1;
+  string message = 2;
+}
+
+message ListRequest {
+  string status = 1;
+  int64 limit = 2;
+  int64 offset = 3;
+}
+
+message ListReply {
+  bytes body_json = 1;
+}
+
+message GetRequest {
+  string id = 1;
+}
+
+message CreateRequest {
+  bytes body_json = 1;
+  string idempotency_key = 2;
+}
+
+message UpdateRequest {
+  string id = 1;
+  bytes body_json = 2;
+}
+
+message CancelRequest {
+  string id = 1;
+}
+
+message ClaimRequest {
+  string id = 1;
+}
+
+message StatusRequest {
+  string id = 1;
+  bytes body_json = 2;
+}
+
+message PickupRequest {
+  string id = 1;
+  int32 index = 2;
+  bytes body_json = 3;
+}
+
+message TaskReply {
+  bytes body_json = 1;
+}
+
+service Task {
+  rpc Health(Empty) returns (HealthReply);
+  rpc List(ListRequest) returns (ListReply);
+  rpc Get(GetRequest) returns (TaskReply);
+  rpc Create(CreateRequest) returns (TaskReply);
+  rpc Update(UpdateRequest) returns (TaskReply);
+  rpc Cancel(CancelRequest) returns (TaskReply);
+  rpc Claim(ClaimRequest) returns (TaskReply);
+  rpc UpdateStatus(StatusRequest) returns (TaskReply);
+  rpc AdvancePickup(PickupRequest) returns (TaskReply);
+
+  rpc GetMe(IdRequest) returns (JsonReply);
+  rpc UpdateMe(IdBody) returns (JsonReply);
+  rpc SetMyStatus(IdBody) returns (JsonReply);
+  rpc ArchiveMe(IdRequest) returns (JsonReply);
+  rpc ListOpenTasks(JsonBody) returns (JsonReply);
+  rpc ClaimWithRules(ClaimRequest) returns (TaskReply);
+  rpc CreateIncident(IdBody) returns (JsonReply);
+  rpc ResolveIncident(ResolveIncidentRequest) returns (JsonReply);
+  rpc ListIncidents(ListQuery) returns (JsonReply);
+  rpc TaskRider(IdRequest) returns (JsonReply);
+  rpc CreateRiderFeedback(IdBody) returns (JsonReply);
+  rpc CreateRiderComment(CommentRequest) returns (JsonReply);
+  rpc ListRiderComments(CommentListRequest) returns (JsonReply);
+  rpc ListRiderCommentThread(CommentThreadRequest) returns (JsonReply);
+  rpc HideRiderComment(CommentRequest) returns (JsonReply);
+  rpc CallRider(IdRequest) returns (JsonReply);
+  rpc PublicRider(IdRequest) returns (JsonReply);
+  rpc ListRiders(ListQuery) returns (JsonReply);
+  rpc CreateRider(IdBody) returns (JsonReply);
+  rpc GetRiderAdmin(IdRequest) returns (JsonReply);
+  rpc UpdateRider(IdBody) returns (JsonReply);
+  rpc ArchiveRider(IdRequest) returns (JsonReply);
+  rpc ListRiderReports(ListQuery) returns (JsonReply);
+  rpc ResolveRiderReport(IdBody) returns (JsonReply);
+
+  rpc GetTaskInternal(IdRequest) returns (JsonReply);
+  rpc ListTasksInternal(ListQuery) returns (JsonReply);
+  rpc GetRiderByUser(IdRequest) returns (JsonReply);
+  rpc GetRiderByID(IdRequest) returns (JsonReply);
+  rpc ProvisionRider(IdBody) returns (JsonReply);
+}
+
+message JsonReply { bytes body_json = 1; }
+message JsonBody { bytes body_json = 1; }
+message IdRequest { string id = 1; }
+message IdBody { string id = 1; bytes body_json = 2; }
+message ListQuery { string status = 1; int32 limit = 2; int32 offset = 3; }
+message ResolveIncidentRequest { string id = 1; string incident_id = 2; bytes body_json = 3; }
+message CommentRequest { string feedback_id = 1; string parent_id = 2; bytes body_json = 3; }
+message CommentListRequest { string feedback_id = 1; string cursor = 2; int32 limit = 3; }
+message CommentThreadRequest { string feedback_id = 1; string root_id = 2; int32 limit = 3; }

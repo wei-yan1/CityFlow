@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1,width=device-width">
+  <meta name="theme-color" content="#182b32">
+  <title>骑手主页 · CityFlow</title>
+  <link rel="stylesheet" href="/assets/shared/app.css?v=20261120-reaction1">
+  <link rel="stylesheet" href="/assets/user/order.css">
+  <link rel="stylesheet" href="/assets/user/rider-profile.css">
+</head>
+<body class="profile-page">
+  <header class="order-topbar">
+    <a class="brand" href="/user" aria-label="CityFlow 用户工作台"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>CITYFLOW<small>骑手主页</small></span></a>
+    <div class="order-top-actions"><span id="profileWelcome" class="welcome"></span><a class="button outline" href="/user">返回任务列表</a><button class="button outline" data-logout>退出</button></div>
+  </header>
+  <main class="profile-shell">
+    <div id="profileNotice" class="notice" role="status" aria-live="polite">正在读取骑手资料…</div>
+    <section class="profile-hero" aria-labelledby="profileName">
+      <div id="profileAvatar" class="profile-avatar">骑</div>
+      <div class="profile-copy">
+        <p class="eyebrow">PUBLIC RIDER PROFILE</p>
+        <h1 id="profileName">骑手主页</h1>
+        <p id="profileIntro" class="profile-intro">正在读取骑手介绍…</p>
+        <div id="profileTags" class="profile-tags"></div>
+      </div>
+      <div class="profile-score"><strong id="profileRating">★ —</strong><span id="profileReviewCount">— 条评价</span></div>
+      <button id="profileReport" class="button danger-outline" type="button">举报骑手</button>
+    </section>
+    <div class="profile-grid">
+      <section class="card profile-main" aria-labelledby="profileReviewsTitle">
+        <div class="order-section-heading"><div><p class="eyebrow">REVIEWS</p><h2 id="profileReviewsTitle">乘客评价</h2><p class="muted">来自已完成订单的真实评价。</p></div><span id="profileCompleted" class="profile-completed">—</span></div>
+        <div id="profileReviews" class="review-list"><p class="muted">正在读取评价…</p></div>
+      </section>
+      <aside class="profile-aside">
+        <section class="card profile-tips" aria-labelledby="profileTipsTitle">
+          <div class="order-section-heading"><div><p class="eyebrow">TIPS</p><h2 id="profileTipsTitle">额外打赏</h2></div></div>
+          <p id="profileTipTotal" class="tip-total">—</p>
+          <div id="profileTips" class="review-list"><p class="muted">暂无打赏记录。</p></div>
+        </section>
+        <section class="card profile-note"><h2>关于公开资料</h2><p>这里只展示骑手愿意公开的服务信息、评分、评价和打赏记录，不展示手机号、邮箱等联系方式。</p><a class="button outline" id="profileBackOrder" href="/user">返回订单列表</a></section>
+      </aside>
+    </div>
+  </main>
+  <dialog id="profileReportDialog" class="report-dialog">
+    <form id="profileReportForm" class="report-form">
+      <div class="dialog-top"><div><span class="dialog-kicker">SAFETY &amp; SUPPORT</span><h2>举报骑手</h2></div><button type="button" class="icon-button" data-close-profile-report aria-label="关闭">×</button></div>
+      <p class="report-note">举报会记录你的账号、关联订单和提交时间，并进入平台处理队列。图片将随记录一起保存。</p>
+      <label class="field">举报原因<select name="reason" required><option value="">请选择</option><option>骑手态度问题</option><option>配送安全风险</option><option>物品损坏或丢失</option><option>路线/送达异常</option><option>其他问题</option></select></label>
+      <label class="field">详细说明<textarea name="details" rows="5" maxlength="1000" placeholder="请描述发生了什么" required></textarea></label>
+      <label class="field">图片证据（可选）<input id="profileReportImages" type="file" accept="image/*" multiple><small class="muted">最多 6 张，单张 3MB 内。</small></label>
+      <div id="profileReportPreview" class="report-preview"></div>
+      <div class="dialog-actions"><button type="button" class="button outline" data-close-profile-report>取消</button><button type="submit" class="button danger">提交举报</button></div>
+      <p id="profileReportStatus" class="form-status" role="status"></p>
+    </form>
+  </dialog>
+  <script src="/assets/shared/common.js?v=20261114-wheel1" defer></script>
+  <script src="/assets/user/rider-profile.js?v=20261120-reaction2" defer></script>
+</body>
+</html>

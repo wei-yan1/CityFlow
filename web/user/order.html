@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#182b32">
+  <title>订单详情 · CityFlow</title>
+  <link rel="stylesheet" href="/assets/shared/app.css?v=20261114-coupon1">
+  <link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="/assets/shared/map.css?v=20261120-track1">
+  <link rel="stylesheet" href="/assets/user/order.css?v=20261114-handover1">
+</head>
+<body class="order-page">
+  <header class="order-topbar">
+    <a class="brand" href="/user" aria-label="返回 CityFlow 用户工作台"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>CITYFLOW<small>订单详情</small></span></a>
+    <div class="order-top-actions"><span id="orderWelcome" class="welcome"></span><a class="button outline" href="/user">返回任务列表</a><button class="button outline" data-logout>退出</button></div>
+  </header>
+  <main class="order-shell">
+    <div id="orderNotice" class="notice" role="status" aria-live="polite">正在读取订单…</div>
+    <section class="order-hero card" aria-labelledby="orderTitle">
+      <div class="order-hero-copy">
+        <p class="eyebrow">ORDER &amp; FULFILLMENT</p>
+        <h1 id="orderTitle">订单详情</h1>
+        <p id="orderRoute" class="order-route">正在读取取送地点…</p>
+        <div id="orderMeta" class="order-meta"></div>
+      </div>
+      <div class="order-hero-side"><span id="orderStatus" class="task-status">读取中</span><strong id="orderPrice" class="order-price">—</strong><span class="order-price-label">订单价格</span></div>
+    </section>
+
+    <div class="order-layout">
+      <section class="card order-map-card" aria-labelledby="orderMapTitle">
+        <div class="order-section-heading"><div><p class="eyebrow">LIVE MAP</p><h2 id="orderMapTitle">配送地图与路线</h2><p class="muted">地图会跟随订单骑手位置；路线可切换自行车、电单车或驾车方案。</p></div></div>
+        <section id="mapWorkspace" class="map-workspace order-map-workspace" aria-label="订单位置与路线地图">
+          <div class="map-toolbar"><div><h2>订单地图</h2><p class="muted">取件点、送达点与骑手位置</p></div><div class="map-actions"></div></div>
+          <div class="map-controls"><label>跟踪任务 <select id="trackedTask" aria-label="选择跟踪任务"><option value="">选择已接单的任务</option></select></label><button id="refreshMap" type="button" class="button outline">刷新地图</button></div>
+          <div id="cityMap" class="city-map" aria-label="订单位置与路线"></div>
+          <div class="map-footer"><div class="map-legend"><span class="legend-shop">商家</span><span class="legend-rider">骑手</span><span class="legend-pickup">取件</span><span class="legend-destination">送达</span></div><span id="mapStatus" role="status" aria-live="polite">正在载入地图…</span></div>
+        </section>
+        <p class="order-map-note">规划路线后，点击任意方案即可在地图上保留；切换方案会替换当前折线，不会自动重新请求。</p>
+      </section>
+
+      <aside class="order-side">
+        <section id="riderCard" class="card rider-card" aria-labelledby="riderCardTitle">
+          <div class="order-section-heading"><div><p class="eyebrow">YOUR RIDER</p><h2 id="riderCardTitle">配送骑手</h2></div><span id="riderLive" class="live-pill">等待中</span></div>
+          <div id="riderContent" class="rider-content"><div class="skeleton-line">正在读取骑手资料…</div></div>
+        </section>
+        <section id="paymentCard" class="card order-payment" aria-labelledby="paymentTitle">
+          <div class="order-section-heading"><div><p class="eyebrow">PAYMENT</p><h2 id="paymentTitle">支付与结算</h2></div></div>
+          <div id="paymentContent" class="payment-summary"><div class="skeleton-line">正在读取支付状态…</div></div>
+        </section>
+        <section class="card order-contact" aria-labelledby="contactTitle">
+          <div class="order-section-heading"><div><p class="eyebrow">HANDOVER</p><h2 id="contactTitle">交接信息</h2></div></div>
+          <div id="contactContent" class="contact-content"><div class="skeleton-line">正在读取联系人…</div></div>
+        </section>
+        <section class="card order-timeline" aria-labelledby="timelineTitle">
+          <div class="order-section-heading"><div><p class="eyebrow">STATUS</p><h2 id="timelineTitle">配送状态</h2></div></div>
+          <ol id="timeline" class="timeline-list"><li class="timeline-empty">正在读取状态…</li></ol>
+        </section>
+      </aside>
+    </div>
+
+    <section class="card order-feedback" aria-labelledby="feedbackTitle">
+      <div class="order-section-heading"><div><p class="eyebrow">AFTER THE DELIVERY</p><h2 id="feedbackTitle">评价、打赏与举报</h2><p class="muted">评价和举报会绑定订单、你的账号和提交时间，写入后进入平台记录。</p></div><button id="reportOpen" type="button" class="button danger-outline">举报骑手</button></div>
+      <div class="feedback-grid">
+        <div class="feedback-block">
+          <h3>评价骑手</h3>
+          <p id="reviewHint" class="muted">任务完成后可以评价本次配送。</p>
+          <form id="reviewForm" class="compact-form">
+            <label>星级<select name="rating" required><option value="5">★★★★★ 很好</option><option value="4">★★★★ 好</option><option value="3">★★★ 一般</option><option value="2">★★ 不满意</option><option value="1">★ 很差</option></select></label>
+            <label>评价内容<textarea name="comment" rows="3" maxlength="500" placeholder="说说这次取件和送达的体验"></textarea></label>
+            <button class="button primary" type="submit">提交评价</button>
+            <p id="reviewStatus" class="form-status" role="status"></p>
+          </form>
+        </div>
+        <div class="feedback-block">
+          <h3>评价商家</h3>
+          <p id="merchantReviewHint" class="muted">订单完成后可以评价本次送达的商家。</p>
+          <form id="merchantReviewForm" class="compact-form">
+            <label>星级<select name="rating" required><option value="5">★★★★★ 很好</option><option value="4">★★★★ 好</option><option value="3">★★★ 一般</option><option value="2">★★ 不满意</option><option value="1">★ 很差</option></select></label>
+            <label>评价内容<textarea name="comment" rows="3" maxlength="500" placeholder="说说商家出餐、包装或门店体验"></textarea></label>
+            <label><input type="checkbox" name="anonymous"> 匿名评价（商家端只显示随机标签）</label>
+            <button class="button primary" type="submit">提交商家评价</button>
+            <p id="merchantReviewStatus" class="form-status" role="status"></p>
+          </form>
+        </div>
+        <div class="feedback-block">
+          <h3>额外打赏</h3>
+          <p class="muted">先记录打赏金额与留言；真实支付通道接入后可在此生成付款二维码。</p>
+          <div class="tip-presets" role="group" aria-label="快捷打赏金额"><button type="button" class="button outline" data-tip-fen="200">¥2</button><button type="button" class="button outline" data-tip-fen="500">¥5</button><button type="button" class="button outline" data-tip-fen="1000">¥10</button><button type="button" class="button outline" data-tip-fen="2000">¥20</button></div>
+          <form id="tipForm" class="compact-form">
+            <label>其他金额（元）<input name="amount" type="number" min="0.01" max="1000" step="0.01" placeholder="例如 6.00"></label>
+            <label>留言（可选）<input name="message" maxlength="100" placeholder="谢谢师傅，辛苦了"></label>
+            <button class="button primary" type="submit">记录打赏</button>
+            <p id="tipStatus" class="form-status" role="status"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="reportDialog" class="report-dialog">
+    <form id="reportForm" method="dialog" class="report-form">
+      <div class="dialog-top"><div><span class="dialog-kicker">SAFETY &amp; SUPPORT</span><h2>举报骑手</h2></div><button type="button" class="icon-button" data-close-report aria-label="关闭">×</button></div>
+      <p class="report-note">这次举报会保存你的账号、当前订单和提交时间，并作为一条记录进入平台处理队列。最多附加 6 张图片。</p>
+      <label class="field">举报原因<select name="reason" required><option value="">请选择</option><option>骑手态度问题</option><option>配送安全风险</option><option>物品损坏或丢失</option><option>路线/送达异常</option><option>其他问题</option></select></label>
+      <label class="field">详细说明<textarea name="details" rows="5" maxlength="1000" placeholder="请描述发生了什么，方便平台核实" required></textarea></label>
+      <label class="field">图片证据（可选）<input id="reportImages" name="images" type="file" accept="image/*" multiple><small class="muted">支持 JPG/PNG/WebP，最多 6 张，单张 3MB 内。</small></label>
+      <div id="reportPreview" class="report-preview" aria-live="polite"></div>
+      <div class="dialog-actions"><button type="button" class="button outline" data-close-report>取消</button><button type="submit" class="button danger">提交举报</button></div>
+      <p id="reportStatus" class="form-status" role="status"></p>
+    </form>
+  </dialog>
+
+  <script src="/assets/shared/common.js?v=20261114-wheel1" defer></script>
+  <script src="/assets/shared/geolocation.js" defer></script>
+  <script src="/assets/vendor/leaflet/leaflet.js" defer></script>
+  <script src="/assets/vendor/fleetops/leaflet-tracking-marker.js" defer></script>
+  <script src="/assets/vendor/fleetops/leaflet-adapter.js" defer></script>
+  <script src="/assets/vendor/coordtransform/coordtransform.js" defer></script>
+  <script src="/assets/shared/map-coordinates.js" defer></script>
+  <script src="/assets/shared/map-amap.js?v=20261120-track1" defer></script>
+  <script src="/assets/shared/map-services.js?v=20261114-route5" defer></script>
+  <script src="/assets/shared/map-history.js?v=20261120-track2" defer></script>
+  <script src="/assets/shared/map-city.js?v=20261114-city1" defer></script>
+  <script src="/assets/shared/map.js?v=20261120-track1" defer></script>
+  <script src="/assets/user/order.js?v=20261119-anon1" defer></script>
+</body>
+</html>
