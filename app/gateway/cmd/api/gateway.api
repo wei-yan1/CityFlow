@@ -284,7 +284,7 @@ type AdminReview {
 	AuthorLabel  string `json:"author_label"`
 	Anonymous    bool   `json:"anonymous"`
 	UserIDMasked string `json:"user_id_masked"`
-	OrderID      string `json:"order_id"`
+	TaskID       string `json:"task_id"`
 	Rating       int    `json:"rating"`
 	Comment      string `json:"comment"`
 	CreatedAt    string `json:"created_at"`
@@ -387,6 +387,10 @@ type StatusRequest {
 	Status string `json:"status"`
 }
 
+type CancelTaskRequest {
+	Reason string `json:"reason,optional"`
+}
+
 type PickupStatusRequest {
 	Status string `json:"status"`
 }
@@ -409,8 +413,11 @@ type Task {
 	Pickup              string         `json:"pickup"`
 	Destination         string         `json:"destination"`
 	Status              string         `json:"status"`
+	CancelReason        string         `json:"cancel_reason,optional"`
 	CreatedBy           string         `json:"created_by"`
 	WorkerID            string         `json:"worker_id,optional"`
+	CancelledAt         string         `json:"cancelled_at,optional"`
+	CompletedAt         string         `json:"completed_at,optional"`
 	CreatedAt           string         `json:"created_at"`
 	UpdatedAt           string         `json:"updated_at"`
 	Events              []TaskEvent    `json:"events"`
@@ -509,6 +516,52 @@ type MerchantListResponse {
 	Offset int               `json:"offset"`
 }
 
+type HotMerchantReview {
+	ID          string `json:"id"`
+	AuthorLabel string `json:"author_label"`
+	Anonymous   bool   `json:"anonymous,optional"`
+	Rating      int    `json:"rating"`
+	Comment     string `json:"comment"`
+	Likes       int    `json:"likes"`
+	Date        string `json:"date"`
+}
+
+type HotMerchantItem {
+	Rank            int              `json:"rank"`
+	MerchantID      string           `json:"merchant_id"`
+	Name            string           `json:"name"`
+	Category        string           `json:"category"`
+	LikeCount       int64            `json:"like_count"`
+	Description     string           `json:"description,optional"`
+	Address         string           `json:"address,optional"`
+	AMAPPOIID       string           `json:"amap_poi_id,optional"`
+	Latitude        float64          `json:"latitude"`
+	Longitude       float64          `json:"longitude"`
+	BusinessStatus  string           `json:"business_status"`
+	ServiceTypes    []string         `json:"service_types"`
+	CapacityPerHour int              `json:"capacity_per_hour"`
+	AvatarURL       string           `json:"avatar_url,optional"`
+	ReviewCount     int              `json:"review_count"`
+	Rating          float64          `json:"rating"`
+	TopReview       HotMerchantReview `json:"top_review,optional"`
+}
+
+type HotMerchantListResponse {
+	Month    string            `json:"month"`
+	Category string            `json:"category"`
+	Items    []HotMerchantItem `json:"items"`
+}
+
+type MerchantLikeRequest {
+	Active bool `json:"active"`
+}
+
+type MerchantLikeState {
+	Active bool  `json:"active"`
+	Count  int64 `json:"count"`
+	Month  string `json:"month"`
+}
+
 type MerchantMediaResponse {
 	AvatarURL string   `json:"avatar_url"`
 	ImageURLs []string `json:"image_urls"`
@@ -578,7 +631,7 @@ type PlaceReview {
 type PlaceReviewRequest {
 	Rating    int    `json:"rating"`
 	Comment   string `json:"comment,optional"`
-	OrderID   string `json:"order_id,optional"`
+	TaskID    string `json:"task_id,optional"`
 	Anonymous bool   `json:"anonymous,optional"`
 }
 
@@ -771,49 +824,137 @@ type PayoutAccount {
 }
 
 type Coupon {
-	ID             string `json:"id"`
-	Code           string `json:"code"`
-	Title          string `json:"title"`
-	Subtitle       string `json:"subtitle,optional"`
-	Description    string `json:"description,optional"`
-	Type           string `json:"type"`
-	ValueFen       int64  `json:"value_fen"`
-	DiscountPercent int   `json:"discount_percent"`
-	MaxDiscountFen int64  `json:"max_discount_fen"`
-	MinSpendFen    int64  `json:"min_spend_fen"`
-	Status         string `json:"status"`
+	ID                 string   `json:"id"`
+	Code               string   `json:"code"`
+	Title              string   `json:"title"`
+	Subtitle           string   `json:"subtitle,optional"`
+	Description        string   `json:"description,optional"`
+	Type               string   `json:"type"`
+	ApplicableTaskTypes []string `json:"applicable_task_types,optional"`
+	ValueFen           int64    `json:"value_fen"`
+	DiscountPercent    int      `json:"discount_percent"`
+	MaxDiscountFen     int64    `json:"max_discount_fen"`
+	MinSpendFen        int64    `json:"min_spend_fen"`
+	TotalQuantity      int      `json:"total_quantity"`
+	ClaimedCount       int      `json:"claimed_count"`
+	PerUserLimit       int      `json:"per_user_limit"`
+	Status             string   `json:"status"`
+	Remaining          int      `json:"remaining"`
+	UserClaimCount     int      `json:"user_claim_count,optional"`
+	UserCouponID       string   `json:"user_coupon_id,optional"`
+	UserCouponStatus   string   `json:"user_coupon_status,optional"`
+	StartsAtMs         int64    `json:"starts_at_ms,optional"`
+	EndsAtMs           int64    `json:"ends_at_ms,optional"`
+	CreatedAtMs        int64    `json:"created_at_ms,optional"`
+	UpdatedAtMs        int64    `json:"updated_at_ms,optional"`
 }
 
 type CouponListResponse {
-	Data   []Coupon `json:"data"`
-	Limit  int      `json:"limit"`
-	Offset int      `json:"offset"`
+	Coupons []Coupon `json:"coupons"`
+	Limit   int      `json:"limit"`
+	Offset  int      `json:"offset"`
 }
 
 type CouponClaim {
-	ID            string `json:"id"`
-	CouponID      string `json:"coupon_id"`
-	UserID        string `json:"user_id"`
-	Status        string `json:"status"`
-	TaskID        string `json:"task_id,optional"`
-	DiscountFen   int64  `json:"discount_fen"`
-	ClaimedAt     string `json:"claimed_at"`
-	UsedAt        string `json:"used_at,optional"`
+	Coupon         Coupon `json:"coupon,optional"`
+	ID             string `json:"id"`
+	CouponID       string `json:"coupon_id"`
+	UserID         string `json:"user_id"`
+	Status         string `json:"status"`
+	TaskID         string `json:"task_id,optional"`
+	PaymentOrderID string `json:"payment_order_id,optional"`
+	ClaimNo        int    `json:"claim_no"`
+	DiscountFen    int64  `json:"discount_fen"`
+	ClaimedAtMs    int64  `json:"claimed_at_ms"`
+	UsedAtMs       int64  `json:"used_at_ms,optional"`
+}
+
+type CouponClaimResponse {
+	Coupon CouponClaim `json:"coupon"`
 }
 
 type CouponQuote {
-	UserCoupon    CouponClaim `json:"user_coupon"`
-	Coupon        Coupon      `json:"coupon"`
-	OriginalAmountFen int64   `json:"original_amount_fen"`
-	DiscountFen   int64       `json:"discount_fen"`
-	PayableAmountFen int64    `json:"payable_amount_fen"`
+	UserCoupon       CouponClaim `json:"user_coupon"`
+	Coupon           Coupon      `json:"coupon"`
+	OriginalAmountFen int64      `json:"original_amount_fen"`
+	DiscountFen      int64       `json:"discount_fen"`
+	PayableAmountFen int64       `json:"payable_amount_fen"`
 }
 
 type CouponQuoteResponse {
-	Data []CouponQuote `json:"data"`
+	Items []CouponQuote `json:"items"`
+}
+
+type RedeemCode {
+	ID         string `json:"id"`
+	CouponID   string `json:"coupon_id"`
+	BatchNo    string `json:"batch_no"`
+	Code       string `json:"code"`
+	Seq        int64  `json:"seq"`
+	MaxRedeem  int    `json:"max_redeem"`
+	UsedCount  int    `json:"used_count"`
+	Status     string `json:"status"`
+	CreatedBy  string `json:"created_by"`
+	Note       string `json:"note,optional"`
+	StartsAtMs int64  `json:"starts_at_ms,optional"`
+	EndsAtMs   int64  `json:"ends_at_ms,optional"`
+	CreatedAtMs int64 `json:"created_at_ms,optional"`
+	UpdatedAtMs int64 `json:"updated_at_ms,optional"`
+}
+
+type RedeemCodeListResponse {
+	Data   []RedeemCode `json:"data"`
+	Limit  int          `json:"limit"`
+	Offset int          `json:"offset"`
+}
+
+type GenerateRedeemCodesRequest {
+	Count     int    `json:"count"`
+	MaxRedeem int    `json:"max_redeem"`
+	BatchNo   string `json:"batch_no,optional"`
+	Note      string `json:"note,optional"`
+	StartsAt  string `json:"starts_at,optional"`
+	EndsAt    string `json:"ends_at,optional"`
+}
+
+type GenerateRedeemCodesResponse {
+	Data    []RedeemCode `json:"data"`
+	BatchNo string       `json:"batch_no"`
 }
 
 
+
+type Notification {
+	ID          string `json:"id"`
+	UserID      string `json:"user_id"`
+	Kind        string `json:"kind"`
+	Title       string `json:"title"`
+	Body        string `json:"body"`
+	TaskID      string `json:"task_id,optional"`
+	Read        bool   `json:"read"`
+	CreatedAtMs int64  `json:"created_at_ms"`
+	ReadAtMs    int64  `json:"read_at_ms,optional"`
+}
+
+type NotificationListResponse {
+	Notifications []Notification `json:"notifications"`
+	Unread        int32          `json:"unread"`
+	Limit         int32          `json:"limit"`
+	Offset        int32          `json:"offset"`
+}
+
+type NotificationUnreadResponse {
+	Unread int32 `json:"unread"`
+}
+
+type MarkNotificationsReadRequest {
+	IDs []string `json:"ids,optional"`
+	All bool     `json:"all,optional"`
+}
+
+type MarkNotificationsReadResponse {
+	Unread int32 `json:"unread"`
+}
 
 service gateway-api {
 
@@ -887,6 +1028,15 @@ service gateway-api {
 	@handler ListTasks
 	get /api/v1/tasks (Empty) returns (TaskListResponse)
 
+	@handler ListNotifications
+	get /api/v1/notifications (Empty) returns (NotificationListResponse)
+
+	@handler UnreadNotifications
+	get /api/v1/notifications/unread (Empty) returns (NotificationUnreadResponse)
+
+	@handler MarkNotificationsRead
+	post /api/v1/notifications/read (MarkNotificationsReadRequest) returns (MarkNotificationsReadResponse)
+
 	@handler CreateTask
 	post /api/v1/tasks (TaskInput) returns (Task)
 
@@ -900,7 +1050,7 @@ service gateway-api {
 	patch /api/v1/tasks/:id (TaskInput) returns (Task)
 
 	@handler CancelTask
-	delete /api/v1/tasks/:id (Empty) returns (Task)
+	delete /api/v1/tasks/:id (CancelTaskRequest) returns (Task)
 
 	@handler ClaimTask
 	post /api/v1/tasks/:id/claim (Empty) returns (Task)
@@ -942,9 +1092,30 @@ service gateway-api {
 	get /api/v1/coupons/mine (Empty) returns (CouponListResponse)
 
 	@handler ClaimCoupon
-	post /api/v1/coupons/:id/claim (Empty) returns (CouponClaim)
+	post /api/v1/coupons/:id/claim (Empty) returns (CouponClaimResponse)
 
-	@handler TaskCoupons
+	@handler RedeemPromotionCoupon
+	post /api/v1/coupons/redeem (Empty) returns (CouponClaimResponse)
+
+	@handler GenerateRedeemCodes
+	post /api/v1/platform/coupons/:id/redeem-codes (GenerateRedeemCodesRequest) returns (GenerateRedeemCodesResponse)
+
+	@handler ListRedeemCodes
+	get /api/v1/platform/coupons/:id/redeem-codes (Empty) returns (RedeemCodeListResponse)
+
+	@handler ListAllRedeemCodes
+	get /api/v1/platform/redeem-codes (Empty) returns (RedeemCodeListResponse)
+
+	@handler ExportRedeemCodes
+	get /api/v1/platform/coupons/:id/redeem-codes/export (Empty) returns (Empty)
+
+	@handler ExportAllRedeemCodes
+	get /api/v1/platform/redeem-codes/export (Empty) returns (Empty)
+
+	@handler DisableRedeemCode
+	post /api/v1/platform/redeem-codes/:id/disable (Empty) returns (Empty)
+
+	@handler ListTaskCoupons
 	get /api/v1/coupons/task/:taskId (Empty) returns (CouponQuoteResponse)
 
 	@handler RiderSettlements
@@ -1057,6 +1228,12 @@ service gateway-api {
 	@handler MerchantMe
 	get /api/v1/merchants/me (Empty) returns (MerchantProfile)
 
+	@handler ListHotMerchants
+	get /api/v1/merchants/hot (Empty) returns (HotMerchantListResponse)
+
+	@handler SetMerchantLike
+	post /api/v1/merchants/:id/likes (MerchantLikeRequest) returns (MerchantLikeState)
+
 	@handler CreateMerchantMe
 	post /api/v1/merchants/me (MerchantInput) returns (MerchantProfile)
 
@@ -1121,7 +1298,7 @@ service gateway-api {
 	@handler TaskReviewTarget
 	get /api/v1/tasks/:id/reviews/target (Empty) returns (DiscoveryPlace)
 
-	// Compatibility aliases used by the retained order page.
+	// Compatibility aliases used by the retained task detail page.
 	@handler LegacyTaskReviewTarget
 	get /api/v1/tasks/:id/merchant-review-target (Empty) returns (DiscoveryPlace)
 
@@ -1155,4 +1332,6 @@ service gateway-api {
 	@handler DeleteMerchant
 	delete /api/v1/platform/merchants/:id (Empty) returns (Empty)
 }
+
+
 

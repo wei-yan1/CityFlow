@@ -5,13 +5,14 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 
 	"cityflow/app/gateway/cmd/api/internal/logic"
 	"cityflow/app/gateway/cmd/api/internal/svc"
 	identityclient "cityflow/app/identity/cmd/rpc/identityclient"
-	"cityflow/internal/domain"
-	"cityflow/internal/domain/auth"
+	"cityflow/internal/common/domain"
 	"cityflow/internal/platform/authctx"
 	"cityflow/internal/platform/authn"
 	"cityflow/internal/platform/httpkit"
@@ -49,11 +50,16 @@ func sameOrigin(r *http.Request) bool {
 		strings.EqualFold(parsed.Host, r.Host)
 }
 
+type loginPayload struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 // Login is the public password exchange. Identity owns credentials and refresh
 // sessions; Gateway only sets the HttpOnly cookie and returns the access token.
 func Login(s *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var request auth.LoginRequest
+		var request loginPayload
 		if err := httpkit.DecodeJSON(w, r, &request); err != nil {
 			httpkit.WriteError(w, http.StatusBadRequest, err.Error())
 			return
@@ -62,13 +68,25 @@ func Login(s *svc.ServiceContext) http.HandlerFunc {
 			httpkit.WriteError(w, http.StatusBadRequest, "email and password are required")
 			return
 		}
+		email := strings.TrimSpace(request.Email)
+		ip := clientIP(r)
+		now := time.Now()
+		if wait, blocked := loginThrottle.blocked(email, ip, now); blocked {
+			w.Header().Set("Retry-After", strconv.Itoa(int(wait.Seconds())+1))
+			httpkit.WriteError(w, http.StatusTooManyRequests, "too many login attempts, try again later")
+			return
+		}
 		response, err := s.Identity.Login(r.Context(), &identityclient.LoginRequest{
-			Email: strings.TrimSpace(request.Email), Password: request.Password,
+			Email: email, Password: request.Password,
 		})
 		if err != nil {
+			if status.Code(err) == codes.Unauthenticated {
+				loginThrottle.failed(email, ip, time.Now())
+			}
 			writeAuthError(w, err, "could not authenticate account")
 			return
 		}
+		loginThrottle.succeeded(email)
 		w.Header().Set("Cache-Control", "no-store")
 		if response.GetRefreshToken() != "" {
 			setRefreshCookie(w, r, response.GetRefreshToken(), 7*24*3600)

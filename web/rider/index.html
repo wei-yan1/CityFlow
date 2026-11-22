@@ -1,13 +1,11 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#173039"><title>骑手工作台 · CityFlow</title><link rel="stylesheet" href="/assets/shared/app.css?v=20261114-pay1"><link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css"><link rel="stylesheet" href="/assets/shared/map.css?v=20261120-track1"><link rel="stylesheet" href="/assets/rider/rider.css?v=20261114-handover1"></head>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#173039"><title>骑手工作台 · CityFlow</title><link rel="stylesheet" href="/assets/shared/app.css?v=20261122-formal6"><link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css"><link rel="stylesheet" href="/assets/shared/map.css?v=20261122-formal6"><link rel="stylesheet" href="/assets/rider/rider.css?v=20261122-formal6"></head>
 <body class="rider-page">
   <header class="topbar"><a class="brand" href="/rider"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>CITYFLOW<small>骑手工作台</small></span></a><div class="top-actions"><span id="welcome" class="welcome"></span><button id="refresh" class="button outline">刷新任务</button><button class="button outline" data-logout>退出</button></div></header>
   <main class="dashboard rider-dashboard">
     <section class="rider-hero">
       <div class="rider-hero-copy">
-        <p class="eyebrow">RIDER CONSOLE</p>
-        <h1>任务工作台</h1>
-        <p>先看取件距离，再接单；履约中只关注下一步。</p>
+        <h1>接单与履约</h1>
       </div>
       <div class="rider-hero-actions">
         <button id="toggleAvailability" type="button" class="button availability-toggle">上线接单</button>
@@ -16,26 +14,22 @@
       </div>
     </section>
     <div id="notice" class="notice" role="status" aria-live="polite"></div>
-    <section id="riderProfile" class="rider-profile" aria-live="polite"><div class="empty-state">正在读取骑手资料…</div></section>
+    <section id="riderProfile" class="rider-profile" aria-live="polite"><div class="empty-state">正在加载骑手资料…</div></section>
 
     <section id="activeTasksPanel" class="rider-panel rider-active-panel">
       <div class="rider-panel-head">
         <div>
-          <p class="eyebrow">ON THE ROAD</p>
           <h2>当前任务</h2>
-          <p class="muted">接单后，这里只保留正在履约的任务和下一步动作。</p>
         </div>
         <div class="rider-panel-meta"><span id="activeCount" class="count">0 项</span><div class="task-pagination"><button type="button" id="activePrevious" class="button outline" disabled>上一页</button><button type="button" id="activeNext" class="button outline" disabled>下一页</button></div></div>
       </div>
-      <div id="activeTasks" class="task-list rider-task-list"><div class="empty-state">正在读取…</div></div>
+      <div id="activeTasks" class="task-list rider-task-list"><div class="empty-state">正在加载任务…</div></div>
     </section>
 
     <section id="openTasksPanel" class="rider-panel rider-open-panel">
       <div class="rider-panel-head">
         <div>
-          <p class="eyebrow">NEARBY ORDERS</p>
           <h2>附近可接任务</h2>
-          <p id="sortSummary" class="muted">尚未获取位置，当前按发布时间排序。</p>
         </div>
         <div class="rider-panel-meta"><span id="openCount" class="count">0 项</span><div class="task-pagination"><button type="button" id="openPrevious" class="button outline" disabled>上一页</button><button type="button" id="openNext" class="button outline" disabled>下一页</button></div></div>
       </div>
@@ -47,34 +41,32 @@
         </div>
         <button id="locateTasks" type="button" class="button outline">定位并排序</button>
       </div>
-      <div id="openTasks" class="task-list rider-open-list"><div class="empty-state">正在读取…</div></div>
+      <div id="openTasks" class="task-list rider-open-list"><div class="empty-state">正在加载任务…</div></div>
     </section>
 
     <section id="walletPanel" class="rider-panel rider-wallet-panel">
       <div class="rider-panel-head">
         <div>
-          <p class="eyebrow">EARNINGS</p>
           <h2>收入与结算</h2>
-          <p class="muted">订单完成后，平台托管款按任务完成自动生成骑手结算。</p>
         </div>
         <button id="openPayout" type="button" class="button outline">设置收款账户</button>
       </div>
-      <div id="walletSummary" class="rider-wallet-summary"><div class="empty-state">正在读取结算…</div></div>
+      <div id="walletSummary" class="rider-wallet-summary"><div class="empty-state">正在加载结算记录…</div></div>
       <div id="settlementList" class="rider-settlement-list"></div>
     </section>
 
     <details class="rider-map-details">
-      <summary><div><strong>任务地图</strong><span>查看取送点、骑手位置与历史轨迹</span></div><span class="rider-map-toggle">展开地图</span></summary>
+      <summary><div><strong>任务地图</strong></div><span class="rider-map-toggle">展开地图</span></summary>
       <section id="mapWorkspace" class="map-workspace" aria-label="任务位置地图">
-        <div class="map-toolbar"><div><h2>任务地图</h2><p class="muted">接单后自动显示取件点、送达点和自己的位置</p></div><div class="map-actions"><button id="mapLocate" type="button" class="button outline">定位到我</button><button id="refreshMap" type="button" class="button outline">刷新地图</button></div></div>
+        <div class="map-toolbar"><div><h2>取送位置</h2></div><div class="map-actions"><button id="mapLocate" type="button" class="button outline">定位到我</button><button id="refreshMap" type="button" class="button outline">刷新地图</button></div></div>
         <div class="map-controls"><label>跟踪任务 <select id="trackedTask" aria-label="选择跟踪任务"><option value="">选择已接单的任务</option></select></label></div>
         <div id="cityMap" class="city-map" aria-label="位置与任务点"></div>
-        <div class="map-footer"><div class="map-legend"><span class="legend-shop">商家</span><span class="legend-rider">骑手</span><span class="legend-pickup">取件</span><span class="legend-destination">送达</span></div><span id="mapStatus" role="status" aria-live="polite">正在载入地图…</span></div>
+        <div class="map-footer"><div class="map-legend"><span class="legend-shop">商家</span><span class="legend-rider">骑手</span><span class="legend-pickup">取件</span><span class="legend-destination">送达</span></div><span id="mapStatus" role="status" aria-live="polite">地图加载中…</span></div>
       </section>
     </details>
   </main>
-  <dialog id="riderDialog" class="editor-dialog"><form id="riderForm"><div class="dialog-top"><div><span class="dialog-kicker">服务设置</span><h2>骑手服务资料</h2></div><button type="button" class="icon-button" data-close aria-label="关闭">×</button></div><div class="dialog-fields"><label class="dialog-field">展示姓名<input name="display_name" required></label><label class="dialog-field">车辆类型<select name="vehicle_type"><option value="WALK">步行</option><option value="BICYCLE">自行车</option><option value="E_BIKE">电动车</option><option value="CAR">汽车</option><option value="OTHER">其他</option></select></label><label class="dialog-field full">服务区域<input name="service_area"></label><label class="dialog-field full">服务类型（逗号分隔）<input name="skills" required placeholder="DELIVERY, PICKUP"></label><label class="dialog-field">最大服务距离（米）<input name="max_distance_meters" type="number" min="1" required></label><label class="dialog-field">最大并行任务<input name="max_concurrent_tasks" type="number" min="1" max="20" required></label><p class="muted dialog-field full">接单时后端会校验：必须处于“可接单”状态、取件点在你的最大服务距离内、并行任务不超过上限。离线或超距时无法接单。</p></div><div class="rider-archive"><div><strong>归档骑手资料</strong><p>归档后将无法继续接单，历史履约记录会保留。</p></div><button type="button" id="archiveRider" class="button danger">归档资料</button></div><p id="riderArchiveNotice" role="status" aria-live="polite"></p><div class="dialog-actions"><button type="button" class="button outline" data-close>取消</button><button class="button primary" type="submit">保存资料</button></div></form></dialog>
-  <dialog id="payoutDialog" class="editor-dialog payout-dialog"><form id="payoutForm"><div class="dialog-top"><div><span class="dialog-kicker">PAYOUT</span><h2>收款账户</h2></div><button type="button" class="icon-button" data-close-payout aria-label="关闭">×</button></div><p class="muted">真实支付宝/微信代付需要在服务端接入对应商户产品和证书；这里保存骑手侧的收款标识，敏感凭据不要写进前端。</p><div class="dialog-fields"><label class="dialog-field">结算渠道<select name="provider"><option value="ALIPAY">支付宝</option><option value="WECHAT">微信支付</option><option value="MOCK">本地模拟</option></select></label><label class="dialog-field">收款账号<input name="account" autocomplete="off" placeholder="支付宝账号 / openid / 手机号"></label><label class="dialog-field full">账户姓名<input name="account_name" autocomplete="off" placeholder="与实名认证一致"></label></div><p id="payoutNotice" class="form-status" role="status"></p><div class="dialog-actions"><button type="button" class="button outline" data-close-payout>取消</button><button class="button primary" type="submit">保存收款账户</button></div></form></dialog>
-  <dialog id="incidentDialog" class="editor-dialog incident-dialog"><form id="incidentForm"><div class="dialog-top"><div><span class="dialog-kicker">EXCEPTION</span><h2>上报履约异常</h2></div><button type="button" class="icon-button" data-close-incident aria-label="关闭">×</button></div><p class="muted">异常会记录到这笔订单，平台处理前不会自动改变订单状态。找不到人、取不到件、地址有误或需要取消时使用。</p><div class="dialog-fields"><label class="dialog-field full">异常类型<select name="kind" required><option value="CONTACT_FAILED">联系不到人</option><option value="PICKUP_FAILED">取不到物品</option><option value="ADDRESS_WRONG">地址有误</option><option value="RIDER_CANCEL">骑手申请取消</option><option value="PLATFORM_HELP">请求平台帮助</option><option value="OTHER">其他</option></select></label><label class="dialog-field full">说明<textarea name="note" rows="4" maxlength="500" placeholder="说明现场情况，方便平台判断" required></textarea></label><label class="dialog-field full">现场图片（可选，最多 6 张）<input id="incidentImages" type="file" accept="image/jpeg,image/png,image/webp" multiple></label></div><div id="incidentPreview" class="incident-preview"></div><p id="incidentStatus" class="form-status" role="status"></p><div class="dialog-actions"><button type="button" class="button outline" data-close-incident>取消</button><button class="button danger" type="submit">提交异常</button></div></form></dialog>
-  <script src="/assets/shared/common.js?v=20261114-wheel1" defer></script><script src="/assets/shared/geolocation.js" defer></script><script src="/assets/vendor/leaflet/leaflet.js" defer></script><script src="/assets/vendor/fleetops/leaflet-tracking-marker.js" defer></script><script src="/assets/vendor/fleetops/leaflet-adapter.js" defer></script><script src="/assets/vendor/coordtransform/coordtransform.js" defer></script><script src="/assets/shared/map-coordinates.js" defer></script><script src="/assets/shared/map-amap.js?v=20261120-track1" defer></script><script src="/assets/shared/map-services.js?v=20261114-route5" defer></script><script src="/assets/shared/map-history.js?v=20261120-track2" defer></script><script src="/assets/shared/map-city.js?v=20261114-city1" defer></script><script src="/assets/user/city-boundary.js" defer></script><script src="/assets/shared/location-feed.js" defer></script><script src="/assets/shared/map.js?v=20261120-track1" defer></script><script src="/assets/rider/rider.js?v=20261114-handover4" defer></script>
+  <dialog id="riderDialog" class="editor-dialog"><form id="riderForm"><div class="dialog-top"><div><h2>骑手服务资料</h2></div><button type="button" class="icon-button" data-close aria-label="关闭">×</button></div><div class="dialog-fields"><label class="dialog-field">展示姓名<input name="display_name" required></label><label class="dialog-field">车辆类型<select name="vehicle_type"><option value="WALK">步行</option><option value="BICYCLE">自行车</option><option value="E_BIKE">电动车</option><option value="CAR">汽车</option><option value="OTHER">其他</option></select></label><label class="dialog-field full">服务区域<input name="service_area"></label><label class="dialog-field full">服务类型<input name="skills" required></label><label class="dialog-field">最大接单距离（米）<input name="max_distance_meters" type="number" min="1" required></label><label class="dialog-field">同时接单上限<input name="max_concurrent_tasks" type="number" min="1" max="20" required></label></div><div class="rider-archive"><div><strong>归档骑手资料</strong><p>归档后将无法继续接单。</p></div><button type="button" id="archiveRider" class="button danger">归档资料</button></div><p id="riderArchiveNotice" role="status" aria-live="polite"></p><div class="dialog-actions"><button type="button" class="button outline" data-close>取消</button><button class="button primary" type="submit">保存资料</button></div></form></dialog>
+  <dialog id="payoutDialog" class="editor-dialog payout-dialog"><form id="payoutForm"><div class="dialog-top"><div><h2>收款账户</h2></div><button type="button" class="icon-button" data-close-payout aria-label="关闭">×</button></div><div class="dialog-fields"><label class="dialog-field">结算渠道<select name="provider"><option value="ALIPAY">支付宝</option><option value="WECHAT">微信支付</option><option value="MOCK">平台结算</option></select></label><label class="dialog-field">收款账号<input name="account" autocomplete="off" placeholder="支付宝账号 / 微信账号"></label><label class="dialog-field full">账户姓名<input name="account_name" autocomplete="off" placeholder="与实名认证一致"></label></div><p id="payoutNotice" class="form-status" role="status"></p><div class="dialog-actions"><button type="button" class="button outline" data-close-payout>取消</button><button class="button primary" type="submit">保存收款账户</button></div></form></dialog>
+  <dialog id="incidentDialog" class="editor-dialog incident-dialog"><form id="incidentForm"><div class="dialog-top"><div><h2>上报履约异常</h2></div><button type="button" class="icon-button" data-close-incident aria-label="关闭">×</button></div><div class="dialog-fields"><label class="dialog-field full">异常类型<select name="kind" required><option value="CONTACT_FAILED">联系不到人</option><option value="PICKUP_FAILED">取不到物品</option><option value="ADDRESS_WRONG">地址有误</option><option value="RIDER_CANCEL">骑手申请取消</option><option value="PLATFORM_HELP">请求平台帮助</option><option value="OTHER">其他</option></select></label><label class="dialog-field full">说明<textarea name="note" rows="4" maxlength="500" placeholder="请说明现场情况" required></textarea></label><label class="dialog-field full">现场图片（可选）<input id="incidentImages" type="file" accept="image/jpeg,image/png,image/webp" multiple></label></div><div id="incidentPreview" class="incident-preview"></div><p id="incidentStatus" class="form-status" role="status"></p><div class="dialog-actions"><button type="button" class="button outline" data-close-incident>取消</button><button class="button danger" type="submit">提交异常</button></div></form></dialog>
+  <script src="/assets/shared/common.js?v=20261122-formal6" defer></script><script src="/assets/shared/geolocation.js" defer></script><script src="/assets/vendor/leaflet/leaflet.js" defer></script><script src="/assets/vendor/fleetops/leaflet-tracking-marker.js" defer></script><script src="/assets/vendor/fleetops/leaflet-adapter.js" defer></script><script src="/assets/vendor/coordtransform/coordtransform.js" defer></script><script src="/assets/shared/map-coordinates.js" defer></script><script src="/assets/shared/map-amap.js?v=20261122-formal6" defer></script><script src="/assets/shared/map-services.js?v=20261122-formal6" defer></script><script src="/assets/shared/map-history.js?v=20261122-formal6" defer></script><script src="/assets/shared/map-city.js?v=20261122-formal6" defer></script><script src="/assets/user/city-boundary.js" defer></script><script src="/assets/shared/location-feed.js" defer></script><script src="/assets/shared/map.js?v=20261122-formal6" defer></script><script src="/assets/rider/rider.js?v=20261122-formal6" defer></script>
 </body></html>

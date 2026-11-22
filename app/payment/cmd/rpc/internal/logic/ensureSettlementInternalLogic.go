@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
+	paymentservice "cityflow/app/payment/application/payment"
 	"cityflow/app/payment/cmd/rpc/internal/svc"
 	"cityflow/app/payment/cmd/rpc/pb"
-	"cityflow/internal/domain/task"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func (l *EnsureSettlementInternalLogic) EnsureSettlementInternal(in *pb.JsonBody
 	if _, err := currentUser(l.ctx); err != nil {
 		return nil, err
 	}
-	var item task.Task
+	var item paymentservice.TaskView
 	if err := json.Unmarshal(in.GetBodyJson(), &item); err != nil {
 		return nil, grpcError(domainErrInvalid("invalid task payload"))
 	}

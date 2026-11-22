@@ -9,37 +9,35 @@
   };
   const riderID = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '');
   const taskID = new URLSearchParams(location.search).get('task_id') || '';
-  if (!riderID) { notice('骑手编号缺失。'); return; }
+  if (!riderID) { notice('未找到骑手资料。'); return; }
   $('#profileWelcome').textContent = user.name || '';
-  if (taskID) $('#profileBackOrder').href = `/orders/${encodeURIComponent(taskID)}`;
   let rider;
   const time = value => value ? new Date(value).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
   const stars = value => '★★★★★'.slice(0, Math.max(1, Math.min(5, Math.round(Number(value) || 0)))) + '☆☆☆☆☆'.slice(0, 5 - Math.max(1, Math.min(5, Math.round(Number(value) || 0))));
 
   function render() {
     $('#profileName').textContent = rider.display_name || '骑手';
-    $('#profileIntro').textContent = [rider.service_area ? `服务区域：${rider.service_area}` : '', (rider.skills || []).join('、')].filter(Boolean).join(' · ') || '这位骑手还没有填写公开介绍。';
     $('#profileAvatar').innerHTML = rider.avatar_url ? `<img src="${esc(rider.avatar_url)}" alt="${esc(rider.display_name)}的头像">` : esc((rider.display_name || '骑').slice(0, 1));
     $('#profileRating').textContent = `★ ${(Number(rider.rating) || 0).toFixed(1)}`;
     $('#profileReviewCount').textContent = `${Number(rider.review_count) || 0} 条评价`;
     $('#profileCompleted').textContent = `已完成 ${Number(rider.completed_tasks) || 0} 单`;
+    const skills = (rider.skills || []).map(skill => ({ DELIVERY: '配送', PICKUP: '代取', PURCHASE: '代购', OTHER: '其他' })[skill] || skill);
     $('#profileTags').innerHTML = [
       ({ WALK: '步行', BICYCLE: '自行车', E_BIKE: '电动车', CAR: '汽车', OTHER: '其他' })[rider.vehicle_type] || rider.vehicle_type,
       rider.service_area,
-      ...(rider.skills || []),
+      ...skills,
     ].filter(Boolean).map(tag => `<span>${esc(tag)}</span>`).join('');
     const reviews = rider.reviews || [];
-    $('#profileReviews').innerHTML = reviews.length ? reviews.map(review => `<article class="review-item"><div class="review-item-head"><span>${esc(review.author_label || '匿名用户')} · ${esc(stars(review.rating))}</span><time>${esc(review.date || '')}</time></div><p>${esc(review.comment || '这位用户没有留下文字评价。')}</p><div class="review-actions"><button type="button" data-rider-review-like="${esc(review.id)}" data-liked="${Boolean(review.liked)}" aria-pressed="${Boolean(review.liked)}">${review.liked ? '已赞' : '赞'} ${Number(review.likes) || 0}</button><button type="button" data-rider-comments="${esc(review.id)}">评论</button></div><div class="review-comments" data-rider-comments-panel="${esc(review.id)}" hidden></div></article>`).join('') : '<p class="muted">还没有评价，完成订单后可以在订单页留下第一条。</p>';
+    $('#profileReviews').innerHTML = reviews.length ? reviews.map(review => `<article class="review-item"><div class="review-item-head"><span>${esc(review.author_label || '匿名用户')} · ${esc(stars(review.rating))}</span><time>${esc(review.date || '')}</time></div><p>${esc(review.comment || '未填写评价内容。')}</p><div class="review-actions"><button type="button" data-rider-review-like="${esc(review.id)}" data-liked="${Boolean(review.liked)}" aria-pressed="${Boolean(review.liked)}">${review.liked ? '已赞' : '赞'} ${Number(review.likes) || 0}</button><button type="button" data-rider-comments="${esc(review.id)}">评论</button></div><div class="review-comments" data-rider-comments-panel="${esc(review.id)}" hidden></div></article>`).join('') : '<p class="muted">暂无评价。</p>';
     $('#profileTipTotal').textContent = rider.tip_total_fen ? `¥${(Number(rider.tip_total_fen) / 100).toFixed(2)}` : '¥0.00';
-    $('#profileTips').innerHTML = (rider.tips || []).length ? rider.tips.map(tip => `<div class="tip-row"><span>${esc(tip.author_label || '匿名用户')} · ${esc(tip.comment || '用户打赏')}</span><strong>¥${(Number(tip.amount_fen) / 100).toFixed(2)}</strong><time>${esc(tip.date || '')}</time></div>`).join('') : '<p class="muted">还没有收到打赏。</p>';
+    $('#profileTips').innerHTML = (rider.tips || []).length ? rider.tips.map(tip => `<div class="tip-row"><span>${esc(tip.author_label || '匿名用户')} · ${esc(tip.comment || '用户打赏')}</span><strong>¥${(Number(tip.amount_fen) / 100).toFixed(2)}</strong><time>${esc(tip.date || '')}</time></div>`).join('') : '<p class="muted">暂无打赏记录。</p>';
     const report = $('#profileReport');
     report.disabled = !taskID;
-    report.title = taskID ? '提交本次订单的举报' : '请从订单详情进入骑手主页后再举报';
-    report.textContent = taskID ? '举报骑手' : '从订单页举报';
+    report.textContent = '举报骑手';
   }
 
   function riderCommentItems(items, feedbackID) {
-    return items.map(item => `<div class="comment-item" data-comment="${esc(item.id)}"><div class="comment-head"><strong>${esc(item.author_label || '匿名用户')}</strong>${item.reply_to_label ? `<span>回复 ${esc(item.reply_to_label)}</span>` : ''}<time>${esc(item.date || '')}</time></div><p>${esc(item.content || '')}</p><div class="comment-actions"><button type="button" data-rider-comment-like="${esc(item.id)}" data-liked="${Boolean(item.liked)}" aria-pressed="${Boolean(item.liked)}">${item.liked ? '已赞' : '赞'} ${Number(item.likes) || 0}</button>${item.depth < 3 ? `<button type="button" data-rider-reply="${esc(item.id)}">回复</button>` : ''}${item.depth === 1 && item.reply_count ? `<button type="button" data-rider-thread="${esc(item.id)}" data-feedback="${esc(feedbackID)}">查看 ${item.reply_count} 条回复</button>` : ''}</div><form class="comment-form" data-rider-comment-form data-feedback="${esc(feedbackID)}" data-parent="${esc(item.id)}" hidden><textarea name="content" maxlength="500" rows="2" placeholder="回复 ${esc(item.author_label || '匿名用户')}" required></textarea><button type="submit">发送回复</button></form></div>`).join('') || '<p class="muted">还没有评论。</p>';
+    return items.map(item => `<div class="comment-item" data-comment="${esc(item.id)}"><div class="comment-head"><strong>${esc(item.author_label || '匿名用户')}</strong>${item.reply_to_label ? `<span>回复 ${esc(item.reply_to_label)}</span>` : ''}<time>${esc(item.date || '')}</time></div><p>${esc(item.content || '')}</p><div class="comment-actions"><button type="button" data-rider-comment-like="${esc(item.id)}" data-liked="${Boolean(item.liked)}" aria-pressed="${Boolean(item.liked)}">${item.liked ? '已赞' : '赞'} ${Number(item.likes) || 0}</button>${item.depth < 3 ? `<button type="button" data-rider-reply="${esc(item.id)}">回复</button>` : ''}${item.depth === 1 && item.reply_count ? `<button type="button" data-rider-thread="${esc(item.id)}" data-feedback="${esc(feedbackID)}">查看 ${item.reply_count} 条回复</button>` : ''}</div><form class="comment-form" data-rider-comment-form data-feedback="${esc(feedbackID)}" data-parent="${esc(item.id)}" hidden><textarea name="content" maxlength="500" rows="2" placeholder="回复 ${esc(item.author_label || '匿名用户')}" required></textarea><button type="submit">发送回复</button></form></div>`).join('') || '<p class="muted">暂无评论。</p>';
   }
 
   async function loadRiderComments(feedbackID, panel, rootID) {
@@ -56,7 +54,7 @@
       const items = data.items || [];
       panel.innerHTML = (rootID ? '<button type="button" data-rider-back-thread>返回全部评论</button>' : '') + riderCommentItems(items, feedbackID) + (rootID ? '' : `<form class="comment-form" data-rider-comment-form data-feedback="${esc(feedbackID)}"><textarea name="content" maxlength="500" rows="2" placeholder="写下你的评论" required></textarea><button type="submit">发表评论</button></form>`);
     } catch (error) {
-      panel.innerHTML = `<p class="muted">${esc(error.message)}</p>`;
+      panel.innerHTML = '<p class="muted">评论加载失败，请稍后重试。</p>';
     }
   }
 
@@ -65,7 +63,7 @@
       rider = await api(`/api/v1/rider-profiles/${encodeURIComponent(riderID)}`);
       render();
       notice('');
-    } catch (error) { notice(`骑手资料读取失败：${error.message}`); }
+    } catch (error) { notice('骑手资料加载失败，请稍后重试。'); }
   }
 
   $('#profileReviews').addEventListener('click', async event => {
@@ -86,7 +84,7 @@
         button.dataset.liked = String(Boolean(result.active));
         button.setAttribute('aria-pressed', String(Boolean(result.active)));
         button.textContent = `${result.active ? '已赞' : '赞'} ${Number(result.count) || 0}`;
-      } catch (error) { notice(`点赞失败：${error.message}`); }
+      } catch (error) { notice('点赞失败，请稍后重试。'); }
       finally { button.disabled = false; }
       return;
     }
@@ -123,7 +121,7 @@
         button.dataset.liked = String(Boolean(result.active));
         button.setAttribute('aria-pressed', String(Boolean(result.active)));
         button.textContent = `${result.active ? '已赞' : '赞'} ${Number(result.count) || 0}`;
-      } catch (error) { notice(`点赞失败：${error.message}`); }
+      } catch (error) { notice('点赞失败，请稍后重试。'); }
       finally { button.disabled = false; }
     }
   });
@@ -141,7 +139,7 @@
       });
       const panel = form.closest('[data-rider-comments-panel]');
       if (panel) await loadRiderComments(form.dataset.feedback, panel, panel.dataset.root || '');
-    } catch (error) { notice(`评论失败：${error.message}`); button.disabled = false; }
+    } catch (error) { notice('评论提交失败，请稍后重试。'); button.disabled = false; }
   });
 
   $('#profileReport').addEventListener('click', () => {
@@ -157,7 +155,7 @@
       const data = await readFile(file);
       const image = document.createElement('img'); image.src = data; image.alt = file.name; preview.append(image);
     }
-    if (!preview.children.length) preview.innerHTML = '<span class="muted">没有可用的图片。</span>';
+    if (!preview.children.length) preview.innerHTML = '<span class="muted">暂无图片。</span>';
   });
   $('#profileReportForm').addEventListener('submit', async event => {
     event.preventDefault();
@@ -165,7 +163,7 @@
     const button = form.querySelector('button[type="submit"]');
     const status = $('#profileReportStatus');
     const files = [...($('#profileReportImages').files || [])].slice(0, 6);
-    button.disabled = true; status.style.color = ''; status.textContent = '正在读取图片并提交…';
+    button.disabled = true; status.style.color = ''; status.textContent = '正在提交举报…';
     try {
       const images = [];
       for (const file of files) {
@@ -175,7 +173,7 @@
       }
       const body = new FormData(form);
       await api(`/api/v1/tasks/${encodeURIComponent(taskID)}/rider/reports`, { method: 'POST', body: JSON.stringify({ reason: String(body.get('reason') || ''), details: String(body.get('details') || ''), images }) });
-      status.style.color = '#267151'; status.textContent = '举报已提交，平台会记录并处理。';
+      status.style.color = '#267151'; status.textContent = '举报已提交。';
       setTimeout(() => $('#profileReportDialog').close(), 900);
     } catch (error) { status.style.color = '#a04b3e'; status.textContent = error.message; }
     finally { button.disabled = false; }

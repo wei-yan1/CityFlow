@@ -23,10 +23,6 @@ service Payment {
   rpc Settlements(ListQuery) returns (JsonReply);
   rpc GetPayoutAccount(Empty) returns (JsonReply);
   rpc SavePayoutAccount(JsonBody) returns (JsonReply);
-  rpc CouponsAvailable(ListQuery) returns (JsonReply);
-  rpc CouponsMine(ListQuery) returns (JsonReply);
-  rpc ClaimCoupon(IdRequest) returns (JsonReply);
-  rpc CouponsForTask(IdRequest) returns (JsonReply);
 
   rpc TaskPaymentStateInternal(IdRequest) returns (JsonReply);
   rpc EnsureSettlementInternal(JsonBody) returns (JsonReply);

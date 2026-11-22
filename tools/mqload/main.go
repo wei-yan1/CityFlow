@@ -28,9 +28,9 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 
-	"cityflow/internal/domain/task"
-	"cityflow/internal/infrastructure/mq"
+	"cityflow/app/task/domain/task"
 	"cityflow/internal/platform/messaging"
+	"cityflow/internal/platform/mq"
 )
 
 type queueInfo struct {

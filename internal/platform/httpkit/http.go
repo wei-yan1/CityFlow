@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"cityflow/internal/application/repository"
-	"cityflow/internal/domain"
+	"cityflow/internal/common/domain"
+	"cityflow/internal/common/pagination"
 
 	"google.golang.org/grpc/codes"
 	grpcStatus "google.golang.org/grpc/status"
@@ -94,8 +94,8 @@ func fallbackMessage(value, fallback string) string {
 	return value
 }
 
-func Page(r *http.Request) (repository.Page, error) {
-	page := repository.Page{Limit: 50}
+func Page(r *http.Request) (pagination.Page, error) {
+	page := pagination.Page{Limit: 50}
 	if raw := r.URL.Query().Get("limit"); raw != "" {
 		value, err := strconv.Atoi(raw)
 		if err != nil || value < 1 || value > 200 {

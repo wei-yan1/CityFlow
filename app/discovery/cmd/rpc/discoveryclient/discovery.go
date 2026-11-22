@@ -31,6 +31,10 @@ type (
 
 	Discovery interface {
 		Health(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HealthReply, error)
+		SetReaction(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
+		ReactionStates(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
+		ListMyReactions(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
+		ListHotMerchants(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
 		GetMyMerchant(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error)
 		CreateMyMerchant(ctx context.Context, in *IdBody, opts ...grpc.CallOption) (*JsonReply, error)
 		UpdateMyMerchant(ctx context.Context, in *IdBody, opts ...grpc.CallOption) (*JsonReply, error)
@@ -63,8 +67,7 @@ type (
 		GetMerchantAdmin(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error)
 		UpdateMerchant(ctx context.Context, in *IdBody, opts ...grpc.CallOption) (*JsonReply, error)
 		ArchiveMerchant(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error)
-		FindTrustedPlacesInternal(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
-		SaveTrustedPlacesInternal(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
+		ResolveTrustedPlacesInternal(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
 		InvalidateMapCache(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*JsonReply, error)
 	}
 
@@ -82,6 +85,26 @@ func NewDiscovery(cli zrpc.Client) Discovery {
 func (m *defaultDiscovery) Health(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HealthReply, error) {
 	client := pb.NewDiscoveryClient(m.cli.Conn())
 	return client.Health(ctx, in, opts...)
+}
+
+func (m *defaultDiscovery) SetReaction(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error) {
+	client := pb.NewDiscoveryClient(m.cli.Conn())
+	return client.SetReaction(ctx, in, opts...)
+}
+
+func (m *defaultDiscovery) ReactionStates(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error) {
+	client := pb.NewDiscoveryClient(m.cli.Conn())
+	return client.ReactionStates(ctx, in, opts...)
+}
+
+func (m *defaultDiscovery) ListMyReactions(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error) {
+	client := pb.NewDiscoveryClient(m.cli.Conn())
+	return client.ListMyReactions(ctx, in, opts...)
+}
+
+func (m *defaultDiscovery) ListHotMerchants(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error) {
+	client := pb.NewDiscoveryClient(m.cli.Conn())
+	return client.ListHotMerchants(ctx, in, opts...)
 }
 
 func (m *defaultDiscovery) GetMyMerchant(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error) {
@@ -244,14 +267,9 @@ func (m *defaultDiscovery) ArchiveMerchant(ctx context.Context, in *IdRequest, o
 	return client.ArchiveMerchant(ctx, in, opts...)
 }
 
-func (m *defaultDiscovery) FindTrustedPlacesInternal(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error) {
+func (m *defaultDiscovery) ResolveTrustedPlacesInternal(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error) {
 	client := pb.NewDiscoveryClient(m.cli.Conn())
-	return client.FindTrustedPlacesInternal(ctx, in, opts...)
-}
-
-func (m *defaultDiscovery) SaveTrustedPlacesInternal(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error) {
-	client := pb.NewDiscoveryClient(m.cli.Conn())
-	return client.SaveTrustedPlacesInternal(ctx, in, opts...)
+	return client.ResolveTrustedPlacesInternal(ctx, in, opts...)
 }
 
 func (m *defaultDiscovery) InvalidateMapCache(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*JsonReply, error) {

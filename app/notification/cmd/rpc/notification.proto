@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package notification;
+option go_package = "cityflow/app/notification/cmd/rpc/pb";
+
+message Empty {}
+message HealthReply { bool ok = 1; string message = 2; }
+
+message NotificationView {
+  string id = 1;
+  string user_id = 2;
+  string kind = 3;
+  string title = 4;
+  string body = 5;
+  reserved 6;
+  string task_id = 7;
+  bool read = 8;
+  int64 created_at_ms = 9;
+  int64 read_at_ms = 10;
+}
+
+message ListReq {
+  string user_id = 1;
+  bool unread_only = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+message ListResp {
+  repeated NotificationView notifications = 1;
+  int32 unread = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+message UnreadReq { string user_id = 1; }
+message UnreadResp { int32 unread = 1; }
+message MarkReadReq {
+  string user_id = 1;
+  repeated string ids = 2;
+  bool all = 3;
+}
+message MarkReadResp { int32 unread = 1; }
+
+service Notification {
+  rpc Health(Empty) returns (HealthReply);
+  rpc List(ListReq) returns (ListResp);
+  rpc Unread(UnreadReq) returns (UnreadResp);
+  rpc MarkRead(MarkReadReq) returns (MarkReadResp);
+}
+

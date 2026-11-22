@@ -3,7 +3,6 @@ package svc
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -14,22 +13,26 @@ import (
 	"cityflow/app/identity/cmd/rpc/identityclient"
 	paymentclient "cityflow/app/payment/cmd/rpc/paymentclient"
 	reactionclient "cityflow/app/reaction/cmd/rpc/reactionclient"
+	commentservice "cityflow/app/task/application/comment"
+	feedbackservice "cityflow/app/task/application/feedback"
+	"cityflow/app/task/application/ports"
+	riderservice "cityflow/app/task/application/rider"
+	taskservice "cityflow/app/task/application/task"
 	"cityflow/app/task/cmd/rpc/internal/config"
+	"cityflow/app/task/internal/adapter/discoveryrpc"
+	taskmysql "cityflow/app/task/internal/adapter/mysql"
+	"cityflow/app/task/internal/adapter/paymentrpc"
+	"cityflow/app/task/repository"
 	trackingclient "cityflow/app/tracking/cmd/rpc/trackingclient"
-	"cityflow/internal/application/repository"
-	"cityflow/internal/application/service"
-	"cityflow/internal/domain"
-	"cityflow/internal/domain/payment"
-	"cityflow/internal/domain/reaction"
-	"cityflow/internal/domain/task"
-	"cityflow/internal/domain/user"
-	"cityflow/internal/infrastructure/maps"
-	"cityflow/internal/infrastructure/memory"
-	"cityflow/internal/infrastructure/mq"
-	mysqlstore "cityflow/internal/infrastructure/mysql"
+	"cityflow/internal/common/contract"
+	"cityflow/internal/integration/rpcadapt"
 	"cityflow/internal/platform/authn"
-	"cityflow/internal/platform/rpcadapt"
+	"cityflow/internal/platform/maps"
+	"cityflow/internal/platform/mq"
+	platformmysql "cityflow/internal/platform/mysql"
+	outboxservice "cityflow/internal/platform/outboxservice"
 	"cityflow/internal/platform/rpcctx"
+	"cityflow/internal/platform/xxljob"
 
 	"github.com/zeromicro/go-zero/zrpc"
 	"google.golang.org/grpc/codes"
@@ -39,26 +42,55 @@ import (
 // accountPort is the subset of identity facts Task needs; satisfied by the
 // local memory store in tests or by an RPC adapter in the microservice layout.
 type accountPort interface {
-	GetUser(ctx context.Context, id string) (*user.User, error)
+	GetAccount(ctx context.Context, id string) (*ports.Account, error)
 	IsActive(ctx context.Context, id string) (bool, error)
 }
 
+// identityAccounts adapts the shared identity RPC projection to Task's port.
+type identityAccounts struct{ client identityclient.Identity }
+
+func (a identityAccounts) GetAccount(ctx context.Context, id string) (*ports.Account, error) {
+	account, err := rpcadapt.Accounts{Client: a.client}.GetAccount(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &ports.Account{
+		ID: account.ID, Email: account.Email, Name: account.Name,
+		AvatarURL: account.AvatarURL, Role: account.Role, Status: account.Status,
+	}, nil
+}
+
+func (a identityAccounts) IsActive(ctx context.Context, id string) (bool, error) {
+	account, err := a.GetAccount(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	return account.Status == "ACTIVE", nil
+}
+
 type ServiceContext struct {
-	Config    config.Config
-	Tasks     *service.TaskService
-	Riders    *service.RiderService
-	Feedback  *service.RiderFeedbackService
-	Comments  *service.CommentService
-	RiderRepo repository.RiderRepository
-	Accounts  accountPort
-	Identity  identityclient.Identity
-	Secret    []byte
-	Status    *authn.StatusCache
-	Relay     *service.OutboxRelay
-	Consumer  *mq.Consumer
-	publisher *mq.Publisher
-	closeFn   func() error
-	pingFn    func(context.Context) error
+	Config       config.Config
+	Tasks        *taskservice.TaskService
+	Riders       *riderservice.RiderService
+	Feedback     *feedbackservice.RiderFeedbackService
+	Comments     *commentservice.CommentService
+	RiderRepo    repository.RiderRepository
+	Reactions    rpcadapt.Reactions
+	LikeCounts   repository.LikeProjection
+	Accounts     accountPort
+	Identity     identityclient.Identity
+	Discovery    discoveryclient.Discovery
+	Secret       []byte
+	Status       *authn.StatusCache
+	Relay        *outboxservice.OutboxRelay
+	Consumer     *mq.Consumer
+	LikeConsumer *mq.Consumer
+	XXLJob       *xxljob.Runtime
+	// InternalJobToken authenticates scheduler-only calls to Discovery.
+	InternalJobToken string
+	publisher        *mq.Publisher
+	closeFn          func() error
+	pingFn           func(context.Context) error
 }
 
 func NewServiceContext(c config.Config) (*ServiceContext, error) {
@@ -67,8 +99,11 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 		secret = strings.TrimSpace(os.Getenv("CITYFLOW_JWT_SECRET"))
 	}
 	if secret == "" {
-		secret = "CHANGE_ME_JWT_SECRET"
-		log.Printf("warning: JWT secret is not set; using development secret")
+		log.Fatalf("JWT secret is not configured: set CITYFLOW_JWT_SECRET in .env")
+	}
+	internalJobToken := strings.TrimSpace(c.InternalJobToken)
+	if internalJobToken == "" {
+		internalJobToken = strings.TrimSpace(os.Getenv("CITYFLOW_INTERNAL_JOB_TOKEN"))
 	}
 
 	var identityClient identityclient.Identity
@@ -91,6 +126,9 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 	if len(c.ReactionRPC.Endpoints) > 0 {
 		reactionClient = reactionclient.NewReaction(zrpc.MustNewClient(c.ReactionRPC))
 	}
+	if reactionClient == nil {
+		return nil, errors.New("ReactionRPC is required when the task service uses MySQL")
+	}
 
 	dsn := strings.TrimSpace(c.DataSource)
 	if dsn == "" {
@@ -101,104 +139,75 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 		store       repository.TaskRepository
 		full        any
 		accounts    accountPort
-		orders      repository.PaymentRepository
-		trusted     repository.TrustedPlaces
 		comments    repository.ReviewComments
 		outboxStore repository.TaskOutboxRepository
+		likeCounts  repository.LikeProjection
 		closeFn     = func() error { return nil }
 		pingFn      = func(context.Context) error { return nil }
 	)
 	if dsn == "" {
-		memoryStore, err := memory.NewStore()
-		if err != nil {
-			return nil, err
-		}
-		store, accounts, orders, trusted, full = memoryStore, memoryStore, memoryStore, nil, memoryStore
-		comments = memory.RiderComments{Store: memoryStore}
-		closeFn = memoryStore.Close
-	} else {
-		if paymentClient == nil {
-			return nil, errors.New("PaymentRPC is required when the task service uses MySQL")
-		}
-		if discoveryClient == nil {
-			return nil, errors.New("DiscoveryRPC is required when the task service uses MySQL")
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		mysqlStore, err := mysqlstore.Open(ctx, dsn)
-		if err != nil {
-			cancel()
-			return nil, err
-		}
-		if err := mysqlStore.MigrateService(ctx, "task"); err != nil {
-			cancel()
-			mysqlStore.Close()
-			return nil, err
-		}
-		cancel()
-		store, full = mysqlStore, mysqlStore
-		accounts = nil
-		orders = nil
-		trusted = nil
-		comments = mysqlstore.RiderComments{Store: mysqlStore}
-		outboxStore = mysqlstore.TaskOutboxStore{Store: mysqlStore}
-		closeFn = func() error { mysqlStore.Close(); return nil }
-		pingFn = mysqlStore.Ping
+		return nil, errors.New("TASK_DATABASE_DSN is required")
 	}
+	if paymentClient == nil {
+		return nil, errors.New("PaymentRPC is required when the task service uses MySQL")
+	}
+	if discoveryClient == nil {
+		return nil, errors.New("DiscoveryRPC is required when the task service uses MySQL")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	db, err := platformmysql.Open(ctx, dsn)
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+	if err := platformmysql.MigrateService(ctx, db, "task"); err != nil {
+		cancel()
+		_ = db.Close()
+		return nil, err
+	}
+	cancel()
+	mysqlStore := taskmysql.New(db)
+	store, full = mysqlStore, mysqlStore
+	accounts = nil
+	comments = taskmysql.RiderComments{Store: mysqlStore}
+	outboxStore = taskmysql.OutboxStore{Store: mysqlStore}
+	likeCounts, _ = full.(repository.LikeProjection)
+	reactionAdapter := rpcadapt.Reactions{Client: reactionClient}
+	closeFn = db.Close
+	pingFn = db.Ping
 
-	taskService := service.NewTaskService(store)
+	taskService := taskservice.NewTaskService(store)
 	if outboxStore != nil {
 		taskService.WithOutbox(outboxStore)
 	}
-	ttl := c.TrustedPlaceTTL
-	if ttl <= 0 {
-		ttl = 1800
-	}
-	if ttl > 604800 {
-		return nil, errors.New("TrustedPlaceTTL must be at most 604800 seconds")
-	}
-	// Cross-service reads go through RPC adapters once the owning service is
-	// configured; the local read-only views remain only as a transition fallback.
-	if discoveryClient != nil {
-		trusted = rpcadapt.Trusted{Client: discoveryClient}
-	}
-	if trusted != nil {
-		taskService.WithTrustedPlaces(service.TrustedPlaces{
-			Store:    trusted,
-			Lifetime: time.Duration(ttl) * time.Second,
-		}, maps.GCJ02ToWGS84)
-	}
-	if paymentClient != nil {
-		taskService.WithPaymentGate(rpcadapt.PaymentGate{Client: paymentClient})
-		taskService.WithSettlements(rpcadapt.Settlements{Client: paymentClient})
-	} else {
-		taskService.WithPaymentGate(paymentGate{orders: orders})
-	}
+	// Cross-service reads go through RPC adapters; Task never reads a
+	// neighbour's tables and never reimplements trusted-place validation.
+	trusted := discoveryrpc.Trusted{Client: discoveryClient}
+	taskService.WithTrustedPlaces(trusted, maps.GCJ02ToWGS84)
+	taskService.WithPaymentGate(paymentrpc.Gate{Client: paymentClient})
+	taskService.WithSettlements(paymentrpc.Settlements{Client: paymentClient})
 
 	// Rider performance profiles and rider feedback are owned by Task.
-	var riders *service.RiderService
-	var feedback *service.RiderFeedbackService
-	commentSvc := service.NewCommentService(comments, true)
+	var riders *riderservice.RiderService
+	var feedback *feedbackservice.RiderFeedbackService
+	commentSvc := commentservice.NewCommentService(comments, true)
 	commentSvc.AnonymousLabel = "匿名用户" // matches the existing rider public projection
-	commentSvc.ReactionTarget = reaction.TargetRiderComment
-	if reactionClient != nil {
-		commentSvc.Reactions = rpcadapt.ReactionReader{Client: reactionClient}
-	}
+	commentSvc.ReactionTarget = contract.TargetRiderComment
+	commentSvc.Reactions = reactionAdapter
 	var riderRepoVar repository.RiderRepository
 	if accounts == nil && identityClient != nil {
-		accounts = rpcadapt.Accounts{Client: identityClient}
+		accounts = identityAccounts{client: identityClient}
 	}
 	if riderRepo, ok := full.(repository.RiderRepository); ok {
 		riderRepoVar = riderRepo
-		riders = service.NewRiderService(riderRepo, accounts, taskService)
+		riders = riderservice.NewRiderService(riderRepo, accounts, taskService)
 		if trackingClient != nil {
 			riders.WithPositions(rpcadapt.Positions{Client: trackingClient})
 		}
 		if feedbackRepo, ok := full.(repository.RiderFeedback); ok {
-			feedback = service.NewRiderFeedbackService(feedbackRepo, store, riderRepo, accounts)
-			feedback.ReactionTarget = reaction.TargetRiderReview
-			if reactionClient != nil {
-				feedback.Reactions = rpcadapt.ReactionReader{Client: reactionClient}
-			}
+			feedback = feedbackservice.NewRiderFeedbackService(feedbackRepo, store, riderRepo, accounts)
+			feedback.ReactionTarget = contract.TargetRiderReview
+			feedback.Reactions = reactionAdapter
 		}
 	}
 
@@ -232,21 +241,30 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 	})
 
 	var publisher *mq.Publisher
-	var relay *service.OutboxRelay
+	var relay *outboxservice.OutboxRelay
 	var consumer *mq.Consumer
+	var likeConsumer *mq.Consumer
 	mqURL := strings.TrimSpace(c.RabbitMQURL)
 	if mqURL == "" {
 		mqURL = strings.TrimSpace(os.Getenv("RABBITMQ_URL"))
 	}
 	if mqURL != "" && outboxStore != nil {
 		publisher = mq.NewPublisher(mqURL)
-		relay = service.NewOutboxRelay(outboxStore, publisher, 2*time.Second, 50)
+		relay = outboxservice.NewOutboxRelay(outboxStore, publisher, 2*time.Second, 50)
 		consumer = mq.NewConsumer(mqURL, "task.rider-events", "rider.approved.v1")
+		likeConsumer = mq.NewConsumerWithExchange(mqURL, "like.record.topic", "task.like-count",
+			"RIDER_REVIEW.times.changed", "RIDER_COMMENT.times.changed")
 		previousClose := closeFn
 		closeFn = func() error {
 			err := previousClose()
 			if pubErr := publisher.Close(); err == nil {
 				err = pubErr
+			}
+			if consumer != nil {
+				_ = consumer.Close()
+			}
+			if likeConsumer != nil {
+				_ = likeConsumer.Close()
 			}
 			return err
 		}
@@ -254,22 +272,42 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 		log.Printf("warning: RABBITMQ_URL is empty; task outbox will stay pending")
 	}
 
+	jobConfig := c.XXLJob.WithEnv()
+	if jobConfig.Enabled {
+		if discoveryClient == nil {
+			return nil, errors.New("DiscoveryRPC is required when XXL-JOB is enabled")
+		}
+		if strings.TrimSpace(internalJobToken) == "" {
+			return nil, errors.New("CITYFLOW_INTERNAL_JOB_TOKEN is required when XXL-JOB is enabled")
+		}
+	}
+	jobRuntime, err := xxljob.NewRuntime(jobConfig, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	return &ServiceContext{
-		Config:    c,
-		Tasks:     taskService,
-		Riders:    riders,
-		Comments:  commentSvc,
-		Feedback:  feedback,
-		RiderRepo: riderRepoVar,
-		Accounts:  accounts,
-		Identity:  identityClient,
-		Secret:    []byte(secret),
-		Status:    statusCache,
-		Relay:     relay,
-		Consumer:  consumer,
-		publisher: publisher,
-		closeFn:   closeFn,
-		pingFn:    pingFn,
+		Config:           c,
+		Tasks:            taskService,
+		Riders:           riders,
+		Comments:         commentSvc,
+		Feedback:         feedback,
+		RiderRepo:        riderRepoVar,
+		Reactions:        reactionAdapter,
+		LikeCounts:       likeCounts,
+		Accounts:         accounts,
+		Identity:         identityClient,
+		Discovery:        discoveryClient,
+		Secret:           []byte(secret),
+		Status:           statusCache,
+		Relay:            relay,
+		Consumer:         consumer,
+		LikeConsumer:     likeConsumer,
+		XXLJob:           jobRuntime,
+		InternalJobToken: internalJobToken,
+		publisher:        publisher,
+		closeFn:          closeFn,
+		pingFn:           pingFn,
 	}, nil
 }
 
@@ -284,10 +322,33 @@ func (s *ServiceContext) AccountActive(ctx context.Context, subject, token strin
 }
 
 func (s *ServiceContext) Close() error {
+	s.XXLJob.Stop()
 	if s.closeFn == nil {
 		return nil
 	}
 	return s.closeFn()
+}
+
+// StartJobs registers the Task-owned handlers and starts the embedded XXL-JOB
+// executor. A nil runtime means scheduling is disabled and is not an error.
+func (s *ServiceContext) StartJobs(ctx context.Context) error {
+	if s == nil || s.XXLJob == nil {
+		return nil
+	}
+	if s.Discovery == nil {
+		return errors.New("DiscoveryRPC is required for rank.build")
+	}
+	builder := discoveryrpc.RankBuilder{
+		Client: s.Discovery,
+		Token:  s.InternalJobToken,
+		Limit:  s.Config.XXLJobRankLimit,
+	}
+	return s.XXLJob.Start(ctx, xxljob.Registration{
+		Name: "rank.build",
+		Handler: func(ctx context.Context, _ *xxljob.RunReq) (string, error) {
+			return builder.Build(ctx)
+		},
+	})
 }
 
 func (s *ServiceContext) Ping(ctx context.Context) error {
@@ -299,48 +360,3 @@ func (s *ServiceContext) Ping(ctx context.Context) error {
 	}
 	return nil
 }
-
-type paymentGate struct {
-	orders repository.PaymentRepository
-}
-
-func (g paymentGate) EnsureClaimable(ctx context.Context, item *task.Task) error {
-	if item == nil || item.QuotedAmountFen == nil || *item.QuotedAmountFen <= 0 {
-		return nil
-	}
-	order, err := g.orders.PaymentOrderByTask(ctx, item.ID)
-	if errors.Is(err, domain.ErrNotFound) {
-		return fmt.Errorf("%w: 请先完成支付后再接单", domain.ErrConflict)
-	}
-	if err != nil {
-		return err
-	}
-	if order.Status != payment.PaymentPaid {
-		return fmt.Errorf("%w: 任务尚未收到付款，暂不能接单", domain.ErrConflict)
-	}
-	return nil
-}
-
-func (g paymentGate) EnsureEditable(ctx context.Context, item *task.Task, nextAmount *int64) error {
-	if item == nil || item.QuotedAmountFen == nil {
-		return nil
-	}
-	order, err := g.orders.PaymentOrderByTask(ctx, item.ID)
-	if errors.Is(err, domain.ErrNotFound) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	if order.Status != payment.PaymentPending && order.Status != payment.PaymentPaid {
-		return nil
-	}
-	if nextAmount == nil || *nextAmount != order.AmountFen {
-		return fmt.Errorf("%w: 已发起支付的任务不能修改报价", domain.ErrConflict)
-	}
-	return nil
-}
-
-func (g paymentGate) AfterCancel(context.Context, *task.Task) {}
-
-var _ service.PaymentGate = paymentGate{}

@@ -28,6 +28,21 @@ func (s *TaskServer) Health(ctx context.Context, in *task.Empty) (*task.HealthRe
 	return l.Health(in)
 }
 
+func (s *TaskServer) SetReaction(ctx context.Context, in *task.JsonBody) (*task.JsonReply, error) {
+	l := logic.NewSetReactionLogic(ctx, s.svcCtx)
+	return l.SetReaction(in)
+}
+
+func (s *TaskServer) ReactionStates(ctx context.Context, in *task.JsonBody) (*task.JsonReply, error) {
+	l := logic.NewGetReactionStateLogic(ctx, s.svcCtx)
+	return l.GetReactionState(in)
+}
+
+func (s *TaskServer) ListMyReactions(ctx context.Context, in *task.JsonBody) (*task.JsonReply, error) {
+	l := logic.NewListMineReactionsLogic(ctx, s.svcCtx)
+	return l.ListMineReactions(in)
+}
+
 func (s *TaskServer) List(ctx context.Context, in *task.ListRequest) (*task.ListReply, error) {
 	l := logic.NewListLogic(ctx, s.svcCtx)
 	return l.List(in)

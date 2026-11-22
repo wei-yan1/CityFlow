@@ -42,6 +42,12 @@ func main() {
 	defer stopEvents()
 	ctx.StartEvents(eventCtx)
 
+	jobCtx, stopJobs := context.WithCancel(context.Background())
+	defer stopJobs()
+	if err := ctx.StartJobs(jobCtx); err != nil {
+		log.Fatalf("discovery jobs: %v", err)
+	}
+
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
 		pb.RegisterDiscoveryServer(grpcServer, server.NewDiscoveryServer(ctx))
 
@@ -62,6 +68,7 @@ func main() {
 		"/discovery.Discovery/PlaceDetail",
 		"/discovery.Discovery/ListPlaceComments",
 		"/discovery.Discovery/ListPlaceCommentThread",
+		"/discovery.Discovery/ListHotMerchants",
 	))
 	defer s.Stop()
 

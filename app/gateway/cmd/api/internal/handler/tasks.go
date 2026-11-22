@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
@@ -9,6 +10,8 @@ import (
 
 	"cityflow/app/gateway/cmd/api/internal/svc"
 	taskclient "cityflow/app/task/cmd/rpc/taskclient"
+	"cityflow/internal/common/auth"
+	"cityflow/internal/platform/authctx"
 	"cityflow/internal/platform/authn"
 	"cityflow/internal/platform/httpkit"
 	"cityflow/internal/platform/rpcctx"
@@ -23,8 +26,23 @@ func ListTasks(s *svc.ServiceContext) http.HandlerFunc {
 			httpkit.WriteError(w, http.StatusBadRequest, err.Error())
 			return
 		}
+		status := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("status")))
+		// Riders browse the shared open pool, not their own claimed-task list.
+		// Task applies service-radius and payment visibility there.
+		if status == "OPEN" {
+			if claims, ok := authctx.Claims(r.Context()); ok && claims.Role == auth.RoleRider {
+				body, _ := json.Marshal(map[string]int64{"limit": int64(page.Limit), "offset": int64(page.Offset)})
+				response, err := s.Task.ListOpenTasks(rpcContext(r), &taskclient.JsonBody{BodyJson: body})
+				if err != nil {
+					writeTaskError(w, err)
+					return
+				}
+				writeRawJSON(w, http.StatusOK, response.GetBodyJson())
+				return
+			}
+		}
 		response, err := s.Task.List(rpcContext(r), &taskclient.ListRequest{
-			Status: strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("status"))),
+			Status: status,
 			Limit:  int64(page.Limit),
 			Offset: int64(page.Offset),
 		})
@@ -85,7 +103,23 @@ func UpdateTask(s *svc.ServiceContext) http.HandlerFunc {
 
 func CancelTask(s *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		response, err := s.Task.Cancel(rpcContext(r), &taskclient.CancelRequest{Id: pathvar.Vars(r)["id"]})
+		var body struct {
+			Reason string `json:"reason"`
+		}
+		raw, err := readBody(w, r)
+		if err != nil {
+			httpkit.WriteError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if len(strings.TrimSpace(string(raw))) > 0 {
+			if err := json.Unmarshal(raw, &body); err != nil {
+				httpkit.WriteError(w, http.StatusBadRequest, "invalid cancellation payload")
+				return
+			}
+		}
+		response, err := s.Task.Cancel(rpcContext(r), &taskclient.CancelRequest{
+			Id: pathvar.Vars(r)["id"], Reason: body.Reason,
+		})
 		if err != nil {
 			writeTaskError(w, err)
 			return
@@ -153,7 +187,7 @@ func readBody(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 
 func rpcContext(r *http.Request) context.Context {
 	token, _ := authn.BearerToken(r)
-	return rpcctx.WithBearer(r.Context(), token)
+	return rpcctx.WithIdempotencyKey(rpcctx.WithBearer(r.Context(), token), r.Header.Get("Idempotency-Key"))
 }
 
 func writeRawJSON(w http.ResponseWriter, status int, body []byte) {

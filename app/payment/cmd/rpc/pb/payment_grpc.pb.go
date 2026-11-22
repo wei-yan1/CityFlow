@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.27.4
-// source: payment.proto
+// source: app/payment/cmd/rpc/payment.proto
 
 package pb
 
@@ -29,10 +29,6 @@ const (
 	Payment_Settlements_FullMethodName              = "/payment.Payment/Settlements"
 	Payment_GetPayoutAccount_FullMethodName         = "/payment.Payment/GetPayoutAccount"
 	Payment_SavePayoutAccount_FullMethodName        = "/payment.Payment/SavePayoutAccount"
-	Payment_CouponsAvailable_FullMethodName         = "/payment.Payment/CouponsAvailable"
-	Payment_CouponsMine_FullMethodName              = "/payment.Payment/CouponsMine"
-	Payment_ClaimCoupon_FullMethodName              = "/payment.Payment/ClaimCoupon"
-	Payment_CouponsForTask_FullMethodName           = "/payment.Payment/CouponsForTask"
 	Payment_TaskPaymentStateInternal_FullMethodName = "/payment.Payment/TaskPaymentStateInternal"
 	Payment_EnsureSettlementInternal_FullMethodName = "/payment.Payment/EnsureSettlementInternal"
 	Payment_RefundForTaskInternal_FullMethodName    = "/payment.Payment/RefundForTaskInternal"
@@ -52,10 +48,6 @@ type PaymentClient interface {
 	Settlements(ctx context.Context, in *ListQuery, opts ...grpc.CallOption) (*JsonReply, error)
 	GetPayoutAccount(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*JsonReply, error)
 	SavePayoutAccount(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
-	CouponsAvailable(ctx context.Context, in *ListQuery, opts ...grpc.CallOption) (*JsonReply, error)
-	CouponsMine(ctx context.Context, in *ListQuery, opts ...grpc.CallOption) (*JsonReply, error)
-	ClaimCoupon(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error)
-	CouponsForTask(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error)
 	TaskPaymentStateInternal(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error)
 	EnsureSettlementInternal(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
 	RefundForTaskInternal(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
@@ -169,46 +161,6 @@ func (c *paymentClient) SavePayoutAccount(ctx context.Context, in *JsonBody, opt
 	return out, nil
 }
 
-func (c *paymentClient) CouponsAvailable(ctx context.Context, in *ListQuery, opts ...grpc.CallOption) (*JsonReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(JsonReply)
-	err := c.cc.Invoke(ctx, Payment_CouponsAvailable_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *paymentClient) CouponsMine(ctx context.Context, in *ListQuery, opts ...grpc.CallOption) (*JsonReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(JsonReply)
-	err := c.cc.Invoke(ctx, Payment_CouponsMine_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *paymentClient) ClaimCoupon(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(JsonReply)
-	err := c.cc.Invoke(ctx, Payment_ClaimCoupon_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *paymentClient) CouponsForTask(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(JsonReply)
-	err := c.cc.Invoke(ctx, Payment_CouponsForTask_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *paymentClient) TaskPaymentStateInternal(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(JsonReply)
@@ -253,10 +205,6 @@ type PaymentServer interface {
 	Settlements(context.Context, *ListQuery) (*JsonReply, error)
 	GetPayoutAccount(context.Context, *Empty) (*JsonReply, error)
 	SavePayoutAccount(context.Context, *JsonBody) (*JsonReply, error)
-	CouponsAvailable(context.Context, *ListQuery) (*JsonReply, error)
-	CouponsMine(context.Context, *ListQuery) (*JsonReply, error)
-	ClaimCoupon(context.Context, *IdRequest) (*JsonReply, error)
-	CouponsForTask(context.Context, *IdRequest) (*JsonReply, error)
 	TaskPaymentStateInternal(context.Context, *IdRequest) (*JsonReply, error)
 	EnsureSettlementInternal(context.Context, *JsonBody) (*JsonReply, error)
 	RefundForTaskInternal(context.Context, *JsonBody) (*JsonReply, error)
@@ -299,18 +247,6 @@ func (UnimplementedPaymentServer) GetPayoutAccount(context.Context, *Empty) (*Js
 }
 func (UnimplementedPaymentServer) SavePayoutAccount(context.Context, *JsonBody) (*JsonReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SavePayoutAccount not implemented")
-}
-func (UnimplementedPaymentServer) CouponsAvailable(context.Context, *ListQuery) (*JsonReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CouponsAvailable not implemented")
-}
-func (UnimplementedPaymentServer) CouponsMine(context.Context, *ListQuery) (*JsonReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CouponsMine not implemented")
-}
-func (UnimplementedPaymentServer) ClaimCoupon(context.Context, *IdRequest) (*JsonReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ClaimCoupon not implemented")
-}
-func (UnimplementedPaymentServer) CouponsForTask(context.Context, *IdRequest) (*JsonReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CouponsForTask not implemented")
 }
 func (UnimplementedPaymentServer) TaskPaymentStateInternal(context.Context, *IdRequest) (*JsonReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TaskPaymentStateInternal not implemented")
@@ -522,78 +458,6 @@ func _Payment_SavePayoutAccount_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Payment_CouponsAvailable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListQuery)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PaymentServer).CouponsAvailable(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Payment_CouponsAvailable_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PaymentServer).CouponsAvailable(ctx, req.(*ListQuery))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Payment_CouponsMine_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListQuery)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PaymentServer).CouponsMine(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Payment_CouponsMine_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PaymentServer).CouponsMine(ctx, req.(*ListQuery))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Payment_ClaimCoupon_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IdRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PaymentServer).ClaimCoupon(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Payment_ClaimCoupon_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PaymentServer).ClaimCoupon(ctx, req.(*IdRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Payment_CouponsForTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IdRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PaymentServer).CouponsForTask(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Payment_CouponsForTask_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PaymentServer).CouponsForTask(ctx, req.(*IdRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Payment_TaskPaymentStateInternal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(IdRequest)
 	if err := dec(in); err != nil {
@@ -696,22 +560,6 @@ var Payment_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Payment_SavePayoutAccount_Handler,
 		},
 		{
-			MethodName: "CouponsAvailable",
-			Handler:    _Payment_CouponsAvailable_Handler,
-		},
-		{
-			MethodName: "CouponsMine",
-			Handler:    _Payment_CouponsMine_Handler,
-		},
-		{
-			MethodName: "ClaimCoupon",
-			Handler:    _Payment_ClaimCoupon_Handler,
-		},
-		{
-			MethodName: "CouponsForTask",
-			Handler:    _Payment_CouponsForTask_Handler,
-		},
-		{
 			MethodName: "TaskPaymentStateInternal",
 			Handler:    _Payment_TaskPaymentStateInternal_Handler,
 		},
@@ -725,5 +573,5 @@ var Payment_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "payment.proto",
+	Metadata: "app/payment/cmd/rpc/payment.proto",
 }

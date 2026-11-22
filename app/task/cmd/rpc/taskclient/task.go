@@ -38,6 +38,9 @@ type (
 
 	Task interface {
 		Health(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HealthReply, error)
+		SetReaction(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
+		ReactionStates(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
+		ListMyReactions(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
 		List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListReply, error)
 		Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*TaskReply, error)
 		Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*TaskReply, error)
@@ -91,6 +94,21 @@ func NewTask(cli zrpc.Client) Task {
 func (m *defaultTask) Health(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HealthReply, error) {
 	client := task.NewTaskClient(m.cli.Conn())
 	return client.Health(ctx, in, opts...)
+}
+
+func (m *defaultTask) SetReaction(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error) {
+	client := task.NewTaskClient(m.cli.Conn())
+	return client.SetReaction(ctx, in, opts...)
+}
+
+func (m *defaultTask) ReactionStates(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error) {
+	client := task.NewTaskClient(m.cli.Conn())
+	return client.ReactionStates(ctx, in, opts...)
+}
+
+func (m *defaultTask) ListMyReactions(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error) {
+	client := task.NewTaskClient(m.cli.Conn())
+	return client.ListMyReactions(ctx, in, opts...)
 }
 
 func (m *defaultTask) List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListReply, error) {

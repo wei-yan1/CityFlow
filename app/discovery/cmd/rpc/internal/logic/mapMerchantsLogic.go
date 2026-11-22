@@ -5,8 +5,8 @@ import (
 
 	"cityflow/app/discovery/cmd/rpc/internal/svc"
 	"cityflow/app/discovery/cmd/rpc/pb"
-	"cityflow/internal/application/repository"
-	"cityflow/internal/domain/location"
+	"cityflow/app/discovery/repository"
+	"cityflow/internal/common/location"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

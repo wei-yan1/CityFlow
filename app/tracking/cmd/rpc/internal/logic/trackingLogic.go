@@ -7,9 +7,9 @@ import (
 
 	"cityflow/app/tracking/cmd/rpc/internal/svc"
 	"cityflow/app/tracking/cmd/rpc/pb"
-	"cityflow/internal/domain"
-	"cityflow/internal/domain/auth"
-	"cityflow/internal/domain/location"
+	"cityflow/internal/common/auth"
+	"cityflow/internal/common/domain"
+	"cityflow/internal/common/location"
 	"cityflow/internal/platform/rpckit"
 
 	"github.com/zeromicro/go-zero/core/logx"

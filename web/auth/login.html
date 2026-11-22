@@ -2,11 +2,11 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>登录 · CityFlow</title><link rel="stylesheet" href="/assets/shared/app.css?v=20261116-auth3">
+  <title>登录 · CityFlow</title><link rel="stylesheet" href="/assets/shared/app.css?v=20261122-formal6">
 </head>
 <body class="auth-page">
   <main class="auth-layout">
-    <section class="auth-intro"><div class="brand">CITYFLOW <span>即时服务调度</span></div><div><p class="eyebrow">城市任务协作平台</p><h1>让每一项即时任务<br>都有合适的执行者。</h1><p class="muted">为用户、商家和骑手提供清晰、可靠的任务协作入口。</p></div><p class="intro-foot" aria-hidden="true"><span class="intro-foot-line"></span></p></section>
+    <section class="auth-intro"><div class="brand">CITYFLOW <span>即时服务调度</span></div><div><h1>让每一项即时任务<br>都有合适的执行者。</h1></div></section>
     <section class="auth-panel">
       <div class="auth-mode-tabs" role="tablist" aria-label="账号入口">
         <button type="button" data-auth-mode="login" class="active">登录</button>
@@ -14,49 +14,39 @@
         <button type="button" data-auth-mode="reset">找回密码</button>
       </div>
       <form id="loginForm" data-auth-panel="login">
-        <p class="eyebrow">欢迎回来</p><h2>登录 CityFlow</h2><p class="muted">使用你的账号继续。</p>
-        <label class="field">邮箱<input id="email" type="email" autocomplete="username" placeholder="name@cityflow.local" required></label>
+        <h2>登录 CityFlow</h2>
+        <label class="field">邮箱<input id="email" type="email" autocomplete="username" placeholder="name@example.com" required></label>
         <label class="field">密码<input id="password" type="password" autocomplete="current-password" placeholder="输入密码" required></label>
         <button class="button primary full" type="submit">登录</button><p id="message" class="message" role="status"></p>
-        <p class="auth-switch">还没有账号？<a href="/register">立即注册普通用户账号</a></p>
-        <p class="rider-register-link">还没有骑手账号？<a href="/rider/register">先支付 0.01 元申请注册</a></p>
-        <div class="demo-box">
-          <div class="demo-head"><p class="demo-title">四个权限平台 · 测试账号</p><span>密码统一 <code>cityflow123</code></span></div>
-          <div class="demo-accounts">
-            <button type="button" data-email="user@cityflow.local" title="点击填入用户端测试账号和密码"><strong>用户端</strong><code>user@cityflow.local</code><small>密码 cityflow123</small></button>
-            <button type="button" data-email="merchant@cityflow.local" title="点击填入商家端测试账号和密码"><strong>商家端</strong><code>merchant@cityflow.local</code><small>密码 cityflow123</small></button>
-            <button type="button" data-email="rider@cityflow.local" title="点击填入骑手端测试账号和密码"><strong>骑手端</strong><code>rider@cityflow.local</code><small>密码 cityflow123</small></button>
-            <button type="button" data-email="admin@cityflow.local" title="点击填入平台管理端测试账号和密码"><strong>平台管理端</strong><code>admin@cityflow.local</code><small>密码 cityflow123</small></button>
-          </div>
-          <p class="demo-hint">点击任意卡片会自动填入对应邮箱和密码。</p>
-        </div>
+        <p class="auth-switch">还没有账号？<a href="/register">立即注册</a></p>
+        <p class="rider-register-link">还没有骑手账号？<a href="/rider/register">申请骑手账号</a></p>
       </form>
 
       <form id="registerForm" data-auth-panel="register" hidden>
-        <p class="eyebrow">普通用户</p><h2>注册 CityFlow</h2><p class="muted">注册后即可发布任务、查看履约进度和评价商家。商家与骑手账号仍由平台审核开通。</p>
-        <label class="field">昵称<input id="registerName" type="text" maxlength="80" autocomplete="name" placeholder="例如：小林" required></label>
+        <h2>注册 CityFlow</h2>
+        <label class="field">昵称<input id="registerName" type="text" maxlength="80" autocomplete="name" required></label>
         <label class="field">邮箱<input id="registerEmail" type="email" autocomplete="email" placeholder="name@example.com" required></label>
-        <label class="field">手机号（可选）<input id="registerPhone" type="tel" maxlength="32" autocomplete="tel" placeholder="仅用于配送联系"></label>
+        <label class="field">手机号（可选）<input id="registerPhone" type="tel" maxlength="32" autocomplete="tel"></label>
         <label class="field">密码<input id="registerPassword" type="password" minlength="8" autocomplete="new-password" placeholder="至少 8 位" required></label>
         <button class="button primary full" type="submit">创建账号</button><p id="registerMessage" class="message" role="status"></p>
         <p class="rider-register-link">已有账号？<a href="/login">返回登录</a></p>
       </form>
 
       <div data-auth-panel="reset" hidden>
-        <p class="eyebrow">账号找回</p><h2>重置密码</h2><p class="muted">输入注册邮箱获取一次性重置码，再设置新密码。重置码 15 分钟内有效。</p>
+        <h2>重置密码</h2><p class="muted">通过注册邮箱获取重置码并设置新密码。</p>
         <form id="resetRequestForm">
           <label class="field">注册邮箱<input id="resetEmail" type="email" autocomplete="email" placeholder="name@example.com" required></label>
           <button class="button primary full" type="submit">获取重置码</button>
           <p id="resetRequestMessage" class="message" role="status"></p>
         </form>
-        <div id="resetTokenBox" class="reset-token-box" hidden><p class="eyebrow">本地演示环境</p><p>正式环境会通过邮件发送。当前演示环境直接把重置码显示在这里，请勿在公网部署时保留此行为。</p><code id="resetTokenValue"></code></div>
+        <div id="resetTokenBox" class="reset-token-box" hidden><p>密码重置码</p><code id="resetTokenValue"></code></div>
         <form id="resetConfirmForm">
           <label class="field">注册邮箱<input id="resetConfirmEmail" type="email" autocomplete="email" placeholder="name@example.com" required></label>
-          <label class="field">重置码<input id="resetToken" type="text" autocomplete="one-time-code" placeholder="粘贴邮件或上方重置码" required></label>
+          <label class="field">重置码<input id="resetToken" type="text" autocomplete="one-time-code" placeholder="输入重置码" required></label>
           <label class="field">新密码<input id="resetPassword" type="password" minlength="8" autocomplete="new-password" placeholder="至少 8 位" required></label>
           <button class="button primary full" type="submit">设置新密码</button><p id="resetConfirmMessage" class="message" role="status"></p>
         </form>
       </div>
     </section>
-  </main><script src="/assets/shared/common.js?v=20261114-wheel1" defer></script><script src="/assets/auth/login.js?v=20261116-auth5" defer></script>
+  </main><script src="/assets/shared/common.js?v=20261122-formal6" defer></script><script src="/assets/auth/login.js?v=20261122-formal6" defer></script>
 </body></html>

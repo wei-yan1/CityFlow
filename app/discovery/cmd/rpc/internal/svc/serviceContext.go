@@ -10,23 +10,27 @@ import (
 	"strings"
 	"time"
 
+	merchantservice "cityflow/app/discovery/application/merchant"
+	reviewservice "cityflow/app/discovery/application/review"
+	trustedservice "cityflow/app/discovery/application/trusted"
 	"cityflow/app/discovery/cmd/rpc/internal/config"
+	discoverymaps "cityflow/app/discovery/internal/adapter/maps"
+	discoverymysql "cityflow/app/discovery/internal/adapter/mysql"
+	discoveryredis "cityflow/app/discovery/internal/adapter/redis"
+	"cityflow/app/discovery/repository"
 	identityclient "cityflow/app/identity/cmd/rpc/identityclient"
 	reactionclient "cityflow/app/reaction/cmd/rpc/reactionclient"
 	taskclient "cityflow/app/task/cmd/rpc/taskclient"
-	"cityflow/internal/application/repository"
-	"cityflow/internal/application/service"
-	"cityflow/internal/domain"
-	"cityflow/internal/domain/location"
-	"cityflow/internal/domain/reaction"
-	"cityflow/internal/domain/user"
-	"cityflow/internal/infrastructure/cache"
-	"cityflow/internal/infrastructure/maps"
-	"cityflow/internal/infrastructure/memory"
-	"cityflow/internal/infrastructure/mq"
-	mysqlstore "cityflow/internal/infrastructure/mysql"
-	"cityflow/internal/platform/rpcadapt"
+	"cityflow/internal/common/contract"
+	"cityflow/internal/common/domain"
+	"cityflow/internal/common/location"
+	"cityflow/internal/integration/rpcadapt"
+	"cityflow/internal/platform/cache"
+	"cityflow/internal/platform/maps"
+	"cityflow/internal/platform/mq"
+	platformmysql "cityflow/internal/platform/mysql"
 	"cityflow/internal/platform/rpcctx"
+	"cityflow/internal/platform/xxljob"
 
 	"github.com/zeromicro/go-zero/zrpc"
 	"google.golang.org/grpc/codes"
@@ -57,21 +61,26 @@ type ServiceContext struct {
 	Media     repository.MerchantMedia
 	Places    repository.TrustedPlaces
 
-	MerchantSvc *service.MerchantService
-	ReviewSvc   *service.MerchantReviewService
-	CommentSvc  *service.CommentService
-	Trusted     service.TrustedPlaces
-	Map         *maps.TrustedSearch
+	MerchantSvc *merchantservice.MerchantService
+	LikeSvc     *merchantservice.MerchantLikeService
+	ReviewSvc   *reviewservice.MerchantReviewService
+	CommentSvc  *reviewservice.CommentService
+	Trusted     *trustedservice.Service
+	Map         *discoverymaps.TrustedSearch
 	MapCache    *cache.MapCache
 	MapPublic   MapPublic
 	UploadDir   string
 
-	Identity identityclient.Identity
-	Task     taskclient.Task
-	Reaction reactionclient.Reaction
-	Secret   []byte
-	Consumer *mq.Consumer
-	Likes    repository.PlaceReviewLikeProjection
+	Identity  identityclient.Identity
+	Task      taskclient.Task
+	Reaction  reactionclient.Reaction
+	Reactions rpcadapt.Reactions
+	Secret    []byte
+	Consumer  *mq.Consumer
+	Likes     repository.LikeProjection
+	// InternalJobToken authenticates scheduler-only RPCs such as rank rebuild.
+	InternalJobToken string
+	XXLJob           *xxljob.Runtime
 
 	closeFn func() error
 	pingFn  func(context.Context) error
@@ -81,11 +90,31 @@ type accountPort struct {
 	client identityclient.Identity
 }
 
-func (a accountPort) GetUser(ctx context.Context, id string) (*user.User, error) {
+func (a accountPort) GetAccount(ctx context.Context, id string) (*merchantservice.Account, error) {
 	if a.client == nil {
 		return nil, domain.ErrUnavailable
 	}
-	return rpcadapt.Accounts{Client: a.client}.GetUser(ctx, id)
+	account, err := rpcadapt.Accounts{Client: a.client}.GetAccount(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &merchantservice.Account{ID: account.ID, Role: account.Role, Status: account.Status}, nil
+}
+
+// taskViews adapts Task's RPC projection to the local TaskView used by the
+// review application service.
+type taskViews struct{ tasks rpcadapt.Tasks }
+
+func (a taskViews) Get(ctx context.Context, id string) (*reviewservice.TaskView, error) {
+	item, err := a.tasks.Snapshot(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &reviewservice.TaskView{
+		ID: item.ID, CreatedBy: item.CreatedBy, Status: item.Status,
+		Destination: item.Destination, DestinationPOIID: item.DestinationPOIID,
+		DestinationLocation: item.DestinationLocation,
+	}, nil
 }
 
 func NewServiceContext(c config.Config) (*ServiceContext, error) {
@@ -94,8 +123,14 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 		secret = strings.TrimSpace(os.Getenv("CITYFLOW_JWT_SECRET"))
 	}
 	if secret == "" {
-		secret = "CHANGE_ME_JWT_SECRET"
-		log.Printf("warning: JWT secret is not set; using development secret")
+		log.Fatalf("JWT secret is not configured: set CITYFLOW_JWT_SECRET in .env")
+	}
+	internalJobToken := strings.TrimSpace(c.InternalJobToken)
+	if internalJobToken == "" {
+		internalJobToken = strings.TrimSpace(os.Getenv("CITYFLOW_INTERNAL_JOB_TOKEN"))
+	}
+	if internalJobToken == "" {
+		log.Printf("warning: internal job token is not set; rank rebuild RPC is disabled")
 	}
 
 	var identity identityclient.Identity
@@ -106,18 +141,18 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 	if len(c.TaskRPC.Endpoints) > 0 {
 		task = taskclient.NewTask(zrpc.MustNewClient(c.TaskRPC))
 	}
-	var reactions reactionclient.Reaction
+	var reaction reactionclient.Reaction
 	if len(c.ReactionRPC.Endpoints) > 0 {
-		reactions = reactionclient.NewReaction(zrpc.MustNewClient(c.ReactionRPC))
+		reaction = reactionclient.NewReaction(zrpc.MustNewClient(c.ReactionRPC))
 	}
-
 	var consumer *mq.Consumer
 	mqURL := strings.TrimSpace(c.RabbitMQURL)
 	if mqURL == "" {
 		mqURL = strings.TrimSpace(os.Getenv("RABBITMQ_URL"))
 	}
 	if mqURL != "" {
-		consumer = mq.NewConsumer(mqURL, "discovery.like-projection", "like.times.PLACE_REVIEW")
+		consumer = mq.NewConsumerWithExchange(mqURL, "like.record.topic", "discovery.like-count",
+			"PLACE_REVIEW.times.changed", "PLACE_COMMENT.times.changed")
 	}
 
 	dsn := strings.TrimSpace(c.DataSource)
@@ -126,47 +161,41 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 	}
 
 	var (
-		merchants   repository.MerchantRepository
-		reviews     repository.MerchantReviews
-		reviewAdmin repository.PlaceReviewAdmin
-		media       repository.MerchantMedia
-		places      repository.TrustedPlaces
-		comments    repository.ReviewComments
-		likes       repository.PlaceReviewLikeProjection
-		accounts    accountPort
-		closeFn     = func() error { return nil }
-		pingFn      = func(context.Context) error { return nil }
+		merchants     repository.MerchantRepository
+		reviews       repository.MerchantReviews
+		reviewAdmin   repository.PlaceReviewAdmin
+		media         repository.MerchantMedia
+		places        repository.TrustedPlaces
+		comments      repository.ReviewComments
+		likes         repository.LikeProjection
+		merchantLikes repository.MerchantLikes
+		accounts      accountPort
+		closeFn       = func() error { return nil }
+		pingFn        = func(context.Context) error { return nil }
 	)
 	if dsn == "" {
-		memoryStore, err := memory.NewStore()
-		if err != nil {
-			return nil, err
-		}
-		merchants, reviews, media = memoryStore, memoryStore, memoryStore
-		reviewAdmin, _ = reviews.(repository.PlaceReviewAdmin)
-		comments = memory.PlaceComments{Store: memoryStore}
-		likes = memoryStore
-		closeFn = memoryStore.Close
-	} else {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		mysqlStore, err := mysqlstore.Open(ctx, dsn)
-		if err != nil {
-			cancel()
-			return nil, err
-		}
-		if err := mysqlStore.MigrateService(ctx, "discovery"); err != nil {
-			cancel()
-			mysqlStore.Close()
-			return nil, err
-		}
-		cancel()
-		merchants, reviews, media, places = mysqlStore, mysqlStore, mysqlStore, mysqlStore
-		reviewAdmin, _ = reviews.(repository.PlaceReviewAdmin)
-		comments = mysqlstore.PlaceComments{Store: mysqlStore}
-		likes = mysqlStore
-		closeFn = func() error { mysqlStore.Close(); return nil }
-		pingFn = mysqlStore.Ping
+		return nil, errors.New("DISCOVERY_DATABASE_DSN is required")
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	db, err := platformmysql.Open(ctx, dsn)
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+	if err := platformmysql.MigrateService(ctx, db, "discovery"); err != nil {
+		cancel()
+		_ = db.Close()
+		return nil, err
+	}
+	cancel()
+	store := discoverymysql.New(db)
+	merchants, reviews, media, places = store, store, store, store
+	reviewAdmin, _ = reviews.(repository.PlaceReviewAdmin)
+	comments = discoverymysql.PlaceComments{Store: store}
+	likes = store
+	merchantLikes = store
+	closeFn = db.Close
+	pingFn = db.Ping
 	accounts = accountPort{client: identity}
 
 	trustedTTL := c.TrustedTTL
@@ -176,19 +205,16 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 	if trustedTTL > 604800 {
 		return nil, errors.New("TrustedTTL must be at most 604800 seconds")
 	}
-	trusted := service.TrustedPlaces{Store: places, Lifetime: time.Duration(trustedTTL) * time.Second}
-	merchantSvc := service.NewMerchantService(merchants, accounts)
-	reviewSvc := &service.MerchantReviewService{Merchants: merchants, Reviews: reviews, ReviewAdmin: reviewAdmin, Places: places, Media: media}
-	if reactions != nil {
-		reviewSvc.Reactions = rpcadapt.ReactionReader{Client: reactions}
-	}
-	commentSvc := service.NewCommentService(comments, false)
-	commentSvc.ReactionTarget = reaction.TargetPlaceComment
-	if reactions != nil {
-		commentSvc.Reactions = rpcadapt.ReactionReader{Client: reactions}
-	}
+	trusted := trustedservice.New(places, time.Duration(trustedTTL)*time.Second)
+	merchantSvc := merchantservice.NewMerchantService(merchants, accounts)
+	reactionAdapter := rpcadapt.Reactions{Client: reaction}
+	reviewSvc := &reviewservice.MerchantReviewService{Merchants: merchants, Reviews: reviews, ReviewAdmin: reviewAdmin, Places: places, Media: media}
+	reviewSvc.Reactions = reactionAdapter
+	commentSvc := reviewservice.NewCommentService(comments, false)
+	commentSvc.ReactionTarget = contract.TargetPlaceComment
+	commentSvc.Reactions = reactionAdapter
 	if len(c.TaskRPC.Endpoints) > 0 {
-		reviewSvc.Tasks = rpcadapt.Tasks{Client: task}
+		reviewSvc.Tasks = taskViews{tasks: rpcadapt.Tasks{Client: task}}
 	}
 
 	uploadDir := strings.TrimSpace(c.UploadDir)
@@ -221,7 +247,15 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 			log.Printf("warning: Redis map cache unavailable: %v", err)
 		}
 	}
-	var mapService *maps.TrustedSearch
+	var hotRanking repository.MerchantHotRanking
+	if mapRedis != nil {
+		hotStore := discoveryredis.NewHotStore(mapRedis.Client())
+		hotRanking = hotStore
+		merchantSvc.SetProfileCache(hotStore)
+	}
+	likeSvc := merchantservice.NewMerchantLikeService(merchantLikes, merchants, hotRanking, store)
+	likeSvc.SetHotSnapshot(store)
+	var mapService *discoverymaps.TrustedSearch
 	if strings.TrimSpace(settings.AmapWebKey) != "" && mapCache != nil {
 		provider := &maps.GuardedAmap{
 			Provider:    maps.NewAmap(settings.AmapWebKey),
@@ -233,7 +267,7 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 			RouteTTL:    time.Minute,
 			HotCities:   hotCityAliases(settings.DefaultCity, settings.DefaultAdcode),
 		}
-		mapService = &maps.TrustedSearch{GuardedAmap: provider, Places: trusted, Adcode: settings.DefaultAdcode}
+		mapService = &discoverymaps.TrustedSearch{GuardedAmap: provider, Places: trusted, Adcode: settings.DefaultAdcode}
 	} else if strings.TrimSpace(settings.AmapWebKey) == "" {
 		log.Printf("warning: AMAP_WEB_SERVICE_KEY is not set; Discovery map endpoints will return 503")
 	}
@@ -265,32 +299,45 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 		return originalClose()
 	}
 
+	jobRuntime, err := xxljob.NewRuntime(c.XXLJob.WithEnv("DISCOVERY"), nil)
+	if err != nil {
+		_ = closeFn()
+		return nil, err
+	}
+
 	return &ServiceContext{
-		Config:      c,
-		Merchants:   merchants,
-		Reviews:     reviews,
-		Media:       media,
-		Places:      places,
-		MerchantSvc: merchantSvc,
-		ReviewSvc:   reviewSvc,
-		CommentSvc:  commentSvc,
-		Trusted:     trusted,
-		Map:         mapService,
-		MapCache:    mapCache,
-		MapPublic:   public,
-		UploadDir:   absoluteUpload,
-		Identity:    identity,
-		Task:        task,
-		Reaction:    reactions,
-		Secret:      []byte(secret),
-		Consumer:    consumer,
-		Likes:       likes,
-		closeFn:     closeFn,
-		pingFn:      pingFn,
+		Config:           c,
+		Merchants:        merchants,
+		Reviews:          reviews,
+		Media:            media,
+		Places:           places,
+		MerchantSvc:      merchantSvc,
+		LikeSvc:          likeSvc,
+		ReviewSvc:        reviewSvc,
+		CommentSvc:       commentSvc,
+		Trusted:          trusted,
+		Map:              mapService,
+		MapCache:         mapCache,
+		MapPublic:        public,
+		UploadDir:        absoluteUpload,
+		Identity:         identity,
+		Task:             task,
+		Reaction:         reaction,
+		Reactions:        reactionAdapter,
+		Secret:           []byte(secret),
+		Consumer:         consumer,
+		Likes:            likes,
+		InternalJobToken: internalJobToken,
+		XXLJob:           jobRuntime,
+		closeFn:          closeFn,
+		pingFn:           pingFn,
 	}, nil
 }
 
 func (s *ServiceContext) Close() error {
+	if s.XXLJob != nil {
+		s.XXLJob.Stop()
+	}
 	if s.Consumer != nil {
 		_ = s.Consumer.Close()
 	}

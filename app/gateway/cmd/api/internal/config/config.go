@@ -12,13 +12,15 @@ type Config struct {
 	DiscoveryRPC               zrpc.RpcClientConf
 	PaymentRPC                 zrpc.RpcClientConf
 	TrackingRPC                zrpc.RpcClientConf
-	ReactionRPC                zrpc.RpcClientConf `json:",optional"`
-	UploadDir                  string             `json:",optional"`
-	TrackingStreamURL          string             `json:",default=http://127.0.0.1:8093"`
-	JWTSecret                  string             `json:",optional"`
-	AuthStatusCacheTTLSeconds  int                `json:",default=5"`
-	RateLimitRPS               int                `json:",default=100"`
-	RateLimitBurst             int                `json:",default=200"`
-	RequestTimeoutSeconds      int                `json:",default=15"`
-	StartupReadyTimeoutSeconds int                `json:",default=60"`
+	PromotionRPC               zrpc.RpcClientConf
+	NotificationRPC            zrpc.RpcClientConf
+	ReactionRPC                zrpc.RpcClientConf
+	UploadDir                  string `json:",optional"`
+	TrackingStreamURL          string `json:",default=http://127.0.0.1:8093"`
+	JWTSecret                  string `json:",optional"`
+	AuthStatusCacheTTLSeconds  int    `json:",default=5"`
+	RateLimitRPS               int    `json:",default=100"`
+	RateLimitBurst             int    `json:",default=200"`
+	RequestTimeoutSeconds      int    `json:",default=15"`
+	StartupReadyTimeoutSeconds int    `json:",default=60"`
 }

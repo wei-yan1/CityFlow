@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#182b32">
+  <title>领券中心 · CityFlow</title>
+  <link rel="stylesheet" href="/assets/shared/app.css?v=20261122-formal6">
+  <link rel="stylesheet" href="/user/coupons/assets/coupons.css?v=20261122-formal6">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/user"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>CITYFLOW<small>领券中心</small></span></a>
+    <div class="top-actions">
+      <span id="welcome" class="welcome"></span>
+      <a class="button outline" href="/user">返回工作台</a>
+      <button class="button outline" data-logout>退出</button>
+    </div>
+  </header>
+  <main class="coupon-page">
+    <section class="coupon-hero" aria-labelledby="couponTitle">
+      <div class="coupon-hero-copy">
+        <h1 id="couponTitle">配送优惠券</h1>
+      </div>
+      <div class="coupon-metrics" aria-label="优惠券概览">
+        <div class="coupon-metric"><strong id="availableCount">—</strong><span>当前可领</span></div>
+        <div class="coupon-metric"><strong id="myCouponCount">—</strong><span>可用优惠券</span></div>
+        <div class="coupon-metric"><strong id="maxSaveCount">—</strong><span>当前最高优惠</span></div>
+        <div class="coupon-metric"><strong id="totalRemaining">—</strong><span>剩余库存</span></div>
+      </div>
+    </section>
+    <nav class="coupon-tabs" aria-label="优惠券页面">
+      <a href="/coupons" aria-current="page">领券中心</a>
+      <a href="/coupons/mine">我的优惠券<span id="mineTabCount" class="coupon-tab-count" hidden>0</span></a>
+    </nav>
+    <section class="coupon-redeem" aria-labelledby="redeemTitle">
+      <div class="coupon-redeem-copy">
+        <h2 id="redeemTitle">使用兑换码</h2>
+      </div>
+      <form id="redeemForm" class="coupon-redeem-form">
+        <label for="redeemCode">兑换码</label>
+        <div class="coupon-redeem-row">
+          <input id="redeemCode" name="code" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="16" placeholder="输入兑换码">
+          <button class="button primary" type="submit">立即兑换</button>
+        </div>
+      </form>
+    </section>
+    <div id="notice" class="notice" role="status" aria-live="polite"></div>
+    <section id="couponGrid" class="coupon-grid" aria-live="polite" aria-busy="true">
+      <div class="coupon-empty"><strong>正在加载优惠券…</strong></div>
+    </section>
+    </main>
+  <div id="couponToast" class="coupon-toast" role="status" aria-live="polite"></div>
+  <script src="/assets/shared/common.js?v=20261122-formal6" defer></script>
+  <script src="/user/coupons/assets/coupons.js?v=20261122-formal6" defer></script>
+</body>
+</html>
+

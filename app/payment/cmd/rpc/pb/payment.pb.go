@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        v5.27.4
-// source: payment.proto
+// source: app/payment/cmd/rpc/payment.proto
 
 package pb
 
@@ -29,7 +29,7 @@ type Empty struct {
 
 func (x *Empty) Reset() {
 	*x = Empty{}
-	mi := &file_payment_proto_msgTypes[0]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -41,7 +41,7 @@ func (x *Empty) String() string {
 func (*Empty) ProtoMessage() {}
 
 func (x *Empty) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_proto_msgTypes[0]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -54,7 +54,7 @@ func (x *Empty) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Empty.ProtoReflect.Descriptor instead.
 func (*Empty) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP(), []int{0}
+	return file_app_payment_cmd_rpc_payment_proto_rawDescGZIP(), []int{0}
 }
 
 type HealthReply struct {
@@ -67,7 +67,7 @@ type HealthReply struct {
 
 func (x *HealthReply) Reset() {
 	*x = HealthReply{}
-	mi := &file_payment_proto_msgTypes[1]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -79,7 +79,7 @@ func (x *HealthReply) String() string {
 func (*HealthReply) ProtoMessage() {}
 
 func (x *HealthReply) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_proto_msgTypes[1]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -92,7 +92,7 @@ func (x *HealthReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthReply.ProtoReflect.Descriptor instead.
 func (*HealthReply) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP(), []int{1}
+	return file_app_payment_cmd_rpc_payment_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *HealthReply) GetOk() bool {
@@ -118,7 +118,7 @@ type JsonBody struct {
 
 func (x *JsonBody) Reset() {
 	*x = JsonBody{}
-	mi := &file_payment_proto_msgTypes[2]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -130,7 +130,7 @@ func (x *JsonBody) String() string {
 func (*JsonBody) ProtoMessage() {}
 
 func (x *JsonBody) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_proto_msgTypes[2]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -143,7 +143,7 @@ func (x *JsonBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JsonBody.ProtoReflect.Descriptor instead.
 func (*JsonBody) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP(), []int{2}
+	return file_app_payment_cmd_rpc_payment_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *JsonBody) GetBodyJson() []byte {
@@ -162,7 +162,7 @@ type JsonReply struct {
 
 func (x *JsonReply) Reset() {
 	*x = JsonReply{}
-	mi := &file_payment_proto_msgTypes[3]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -174,7 +174,7 @@ func (x *JsonReply) String() string {
 func (*JsonReply) ProtoMessage() {}
 
 func (x *JsonReply) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_proto_msgTypes[3]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -187,7 +187,7 @@ func (x *JsonReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JsonReply.ProtoReflect.Descriptor instead.
 func (*JsonReply) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP(), []int{3}
+	return file_app_payment_cmd_rpc_payment_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *JsonReply) GetBodyJson() []byte {
@@ -206,7 +206,7 @@ type IdRequest struct {
 
 func (x *IdRequest) Reset() {
 	*x = IdRequest{}
-	mi := &file_payment_proto_msgTypes[4]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -218,7 +218,7 @@ func (x *IdRequest) String() string {
 func (*IdRequest) ProtoMessage() {}
 
 func (x *IdRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_proto_msgTypes[4]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -231,7 +231,7 @@ func (x *IdRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IdRequest.ProtoReflect.Descriptor instead.
 func (*IdRequest) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP(), []int{4}
+	return file_app_payment_cmd_rpc_payment_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *IdRequest) GetId() string {
@@ -251,7 +251,7 @@ type IdBody struct {
 
 func (x *IdBody) Reset() {
 	*x = IdBody{}
-	mi := &file_payment_proto_msgTypes[5]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -263,7 +263,7 @@ func (x *IdBody) String() string {
 func (*IdBody) ProtoMessage() {}
 
 func (x *IdBody) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_proto_msgTypes[5]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -276,7 +276,7 @@ func (x *IdBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IdBody.ProtoReflect.Descriptor instead.
 func (*IdBody) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP(), []int{5}
+	return file_app_payment_cmd_rpc_payment_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *IdBody) GetId() string {
@@ -304,7 +304,7 @@ type ListQuery struct {
 
 func (x *ListQuery) Reset() {
 	*x = ListQuery{}
-	mi := &file_payment_proto_msgTypes[6]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -316,7 +316,7 @@ func (x *ListQuery) String() string {
 func (*ListQuery) ProtoMessage() {}
 
 func (x *ListQuery) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_proto_msgTypes[6]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -329,7 +329,7 @@ func (x *ListQuery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListQuery.ProtoReflect.Descriptor instead.
 func (*ListQuery) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP(), []int{6}
+	return file_app_payment_cmd_rpc_payment_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListQuery) GetStatus() string {
@@ -364,7 +364,7 @@ type NotifyRequest struct {
 
 func (x *NotifyRequest) Reset() {
 	*x = NotifyRequest{}
-	mi := &file_payment_proto_msgTypes[7]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -376,7 +376,7 @@ func (x *NotifyRequest) String() string {
 func (*NotifyRequest) ProtoMessage() {}
 
 func (x *NotifyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_proto_msgTypes[7]
+	mi := &file_app_payment_cmd_rpc_payment_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -389,7 +389,7 @@ func (x *NotifyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NotifyRequest.ProtoReflect.Descriptor instead.
 func (*NotifyRequest) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP(), []int{7}
+	return file_app_payment_cmd_rpc_payment_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *NotifyRequest) GetProvider() string {
@@ -413,11 +413,11 @@ func (x *NotifyRequest) GetBody() []byte {
 	return nil
 }
 
-var File_payment_proto protoreflect.FileDescriptor
+var File_app_payment_cmd_rpc_payment_proto protoreflect.FileDescriptor
 
-const file_payment_proto_rawDesc = "" +
+const file_app_payment_cmd_rpc_payment_proto_rawDesc = "" +
 	"\n" +
-	"\rpayment.proto\x12\apayment\"\a\n" +
+	"!app/payment/cmd/rpc/payment.proto\x12\apayment\"\a\n" +
 	"\x05Empty\"7\n" +
 	"\vHealthReply\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x18\n" +
@@ -438,7 +438,7 @@ const file_payment_proto_rawDesc = "" +
 	"\rNotifyRequest\x12\x1a\n" +
 	"\bprovider\x18\x01 \x01(\tR\bprovider\x12!\n" +
 	"\fheaders_json\x18\x02 \x01(\fR\vheadersJson\x12\x12\n" +
-	"\x04body\x18\x03 \x01(\fR\x04body2\xbf\a\n" +
+	"\x04body\x18\x03 \x01(\fR\x04body2\xdb\x05\n" +
 	"\aPayment\x12.\n" +
 	"\x06Health\x12\x0e.payment.Empty\x1a\x14.payment.HealthReply\x121\n" +
 	"\aSummary\x12\x12.payment.IdRequest\x1a\x12.payment.JsonReply\x123\n" +
@@ -449,29 +449,25 @@ const file_payment_proto_rawDesc = "" +
 	"\x06Notify\x12\x16.payment.NotifyRequest\x1a\x12.payment.JsonReply\x125\n" +
 	"\vSettlements\x12\x12.payment.ListQuery\x1a\x12.payment.JsonReply\x126\n" +
 	"\x10GetPayoutAccount\x12\x0e.payment.Empty\x1a\x12.payment.JsonReply\x12:\n" +
-	"\x11SavePayoutAccount\x12\x11.payment.JsonBody\x1a\x12.payment.JsonReply\x12:\n" +
-	"\x10CouponsAvailable\x12\x12.payment.ListQuery\x1a\x12.payment.JsonReply\x125\n" +
-	"\vCouponsMine\x12\x12.payment.ListQuery\x1a\x12.payment.JsonReply\x125\n" +
-	"\vClaimCoupon\x12\x12.payment.IdRequest\x1a\x12.payment.JsonReply\x128\n" +
-	"\x0eCouponsForTask\x12\x12.payment.IdRequest\x1a\x12.payment.JsonReply\x12B\n" +
+	"\x11SavePayoutAccount\x12\x11.payment.JsonBody\x1a\x12.payment.JsonReply\x12B\n" +
 	"\x18TaskPaymentStateInternal\x12\x12.payment.IdRequest\x1a\x12.payment.JsonReply\x12A\n" +
 	"\x18EnsureSettlementInternal\x12\x11.payment.JsonBody\x1a\x12.payment.JsonReply\x12>\n" +
 	"\x15RefundForTaskInternal\x12\x11.payment.JsonBody\x1a\x12.payment.JsonReplyB!Z\x1fcityflow/app/payment/cmd/rpc/pbb\x06proto3"
 
 var (
-	file_payment_proto_rawDescOnce sync.Once
-	file_payment_proto_rawDescData []byte
+	file_app_payment_cmd_rpc_payment_proto_rawDescOnce sync.Once
+	file_app_payment_cmd_rpc_payment_proto_rawDescData []byte
 )
 
-func file_payment_proto_rawDescGZIP() []byte {
-	file_payment_proto_rawDescOnce.Do(func() {
-		file_payment_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_payment_proto_rawDesc), len(file_payment_proto_rawDesc)))
+func file_app_payment_cmd_rpc_payment_proto_rawDescGZIP() []byte {
+	file_app_payment_cmd_rpc_payment_proto_rawDescOnce.Do(func() {
+		file_app_payment_cmd_rpc_payment_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_app_payment_cmd_rpc_payment_proto_rawDesc), len(file_app_payment_cmd_rpc_payment_proto_rawDesc)))
 	})
-	return file_payment_proto_rawDescData
+	return file_app_payment_cmd_rpc_payment_proto_rawDescData
 }
 
-var file_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
-var file_payment_proto_goTypes = []any{
+var file_app_payment_cmd_rpc_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_app_payment_cmd_rpc_payment_proto_goTypes = []any{
 	(*Empty)(nil),         // 0: payment.Empty
 	(*HealthReply)(nil),   // 1: payment.HealthReply
 	(*JsonBody)(nil),      // 2: payment.JsonBody
@@ -481,7 +477,7 @@ var file_payment_proto_goTypes = []any{
 	(*ListQuery)(nil),     // 6: payment.ListQuery
 	(*NotifyRequest)(nil), // 7: payment.NotifyRequest
 }
-var file_payment_proto_depIdxs = []int32{
+var file_app_payment_cmd_rpc_payment_proto_depIdxs = []int32{
 	0,  // 0: payment.Payment.Health:input_type -> payment.Empty
 	4,  // 1: payment.Payment.Summary:input_type -> payment.IdRequest
 	5,  // 2: payment.Payment.CreateCharge:input_type -> payment.IdBody
@@ -492,57 +488,49 @@ var file_payment_proto_depIdxs = []int32{
 	6,  // 7: payment.Payment.Settlements:input_type -> payment.ListQuery
 	0,  // 8: payment.Payment.GetPayoutAccount:input_type -> payment.Empty
 	2,  // 9: payment.Payment.SavePayoutAccount:input_type -> payment.JsonBody
-	6,  // 10: payment.Payment.CouponsAvailable:input_type -> payment.ListQuery
-	6,  // 11: payment.Payment.CouponsMine:input_type -> payment.ListQuery
-	4,  // 12: payment.Payment.ClaimCoupon:input_type -> payment.IdRequest
-	4,  // 13: payment.Payment.CouponsForTask:input_type -> payment.IdRequest
-	4,  // 14: payment.Payment.TaskPaymentStateInternal:input_type -> payment.IdRequest
-	2,  // 15: payment.Payment.EnsureSettlementInternal:input_type -> payment.JsonBody
-	2,  // 16: payment.Payment.RefundForTaskInternal:input_type -> payment.JsonBody
-	1,  // 17: payment.Payment.Health:output_type -> payment.HealthReply
-	3,  // 18: payment.Payment.Summary:output_type -> payment.JsonReply
-	3,  // 19: payment.Payment.CreateCharge:output_type -> payment.JsonReply
-	3,  // 20: payment.Payment.MockPay:output_type -> payment.JsonReply
-	3,  // 21: payment.Payment.Sync:output_type -> payment.JsonReply
-	3,  // 22: payment.Payment.Refund:output_type -> payment.JsonReply
-	3,  // 23: payment.Payment.Notify:output_type -> payment.JsonReply
-	3,  // 24: payment.Payment.Settlements:output_type -> payment.JsonReply
-	3,  // 25: payment.Payment.GetPayoutAccount:output_type -> payment.JsonReply
-	3,  // 26: payment.Payment.SavePayoutAccount:output_type -> payment.JsonReply
-	3,  // 27: payment.Payment.CouponsAvailable:output_type -> payment.JsonReply
-	3,  // 28: payment.Payment.CouponsMine:output_type -> payment.JsonReply
-	3,  // 29: payment.Payment.ClaimCoupon:output_type -> payment.JsonReply
-	3,  // 30: payment.Payment.CouponsForTask:output_type -> payment.JsonReply
-	3,  // 31: payment.Payment.TaskPaymentStateInternal:output_type -> payment.JsonReply
-	3,  // 32: payment.Payment.EnsureSettlementInternal:output_type -> payment.JsonReply
-	3,  // 33: payment.Payment.RefundForTaskInternal:output_type -> payment.JsonReply
-	17, // [17:34] is the sub-list for method output_type
-	0,  // [0:17] is the sub-list for method input_type
+	4,  // 10: payment.Payment.TaskPaymentStateInternal:input_type -> payment.IdRequest
+	2,  // 11: payment.Payment.EnsureSettlementInternal:input_type -> payment.JsonBody
+	2,  // 12: payment.Payment.RefundForTaskInternal:input_type -> payment.JsonBody
+	1,  // 13: payment.Payment.Health:output_type -> payment.HealthReply
+	3,  // 14: payment.Payment.Summary:output_type -> payment.JsonReply
+	3,  // 15: payment.Payment.CreateCharge:output_type -> payment.JsonReply
+	3,  // 16: payment.Payment.MockPay:output_type -> payment.JsonReply
+	3,  // 17: payment.Payment.Sync:output_type -> payment.JsonReply
+	3,  // 18: payment.Payment.Refund:output_type -> payment.JsonReply
+	3,  // 19: payment.Payment.Notify:output_type -> payment.JsonReply
+	3,  // 20: payment.Payment.Settlements:output_type -> payment.JsonReply
+	3,  // 21: payment.Payment.GetPayoutAccount:output_type -> payment.JsonReply
+	3,  // 22: payment.Payment.SavePayoutAccount:output_type -> payment.JsonReply
+	3,  // 23: payment.Payment.TaskPaymentStateInternal:output_type -> payment.JsonReply
+	3,  // 24: payment.Payment.EnsureSettlementInternal:output_type -> payment.JsonReply
+	3,  // 25: payment.Payment.RefundForTaskInternal:output_type -> payment.JsonReply
+	13, // [13:26] is the sub-list for method output_type
+	0,  // [0:13] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
 	0,  // [0:0] is the sub-list for extension extendee
 	0,  // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_payment_proto_init() }
-func file_payment_proto_init() {
-	if File_payment_proto != nil {
+func init() { file_app_payment_cmd_rpc_payment_proto_init() }
+func file_app_payment_cmd_rpc_payment_proto_init() {
+	if File_app_payment_cmd_rpc_payment_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_payment_proto_rawDesc), len(file_payment_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_payment_cmd_rpc_payment_proto_rawDesc), len(file_app_payment_cmd_rpc_payment_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_payment_proto_goTypes,
-		DependencyIndexes: file_payment_proto_depIdxs,
-		MessageInfos:      file_payment_proto_msgTypes,
+		GoTypes:           file_app_payment_cmd_rpc_payment_proto_goTypes,
+		DependencyIndexes: file_app_payment_cmd_rpc_payment_proto_depIdxs,
+		MessageInfos:      file_app_payment_cmd_rpc_payment_proto_msgTypes,
 	}.Build()
-	File_payment_proto = out.File
-	file_payment_proto_goTypes = nil
-	file_payment_proto_depIdxs = nil
+	File_app_payment_cmd_rpc_payment_proto = out.File
+	file_app_payment_cmd_rpc_payment_proto_goTypes = nil
+	file_app_payment_cmd_rpc_payment_proto_depIdxs = nil
 }

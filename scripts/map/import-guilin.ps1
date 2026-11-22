@@ -11,12 +11,26 @@ param(
     [int]$Port = 5434,
     [string]$Database = 'cityflow_map',
     [string]$User = 'cityflow',
-    [string]$Password = 'CHANGE_ME_POSTGIS_PASSWORD',
+    [string]$Password = '',
     [string]$SourceUrl = 'https://download.openstreetmap.fr/extracts/asia/china/guangxi-latest.osm.pbf'
 )
 
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+
+# Credentials stay outside git: -Password argument, then POSTGIS_PASSWORD from
+# the process environment, then the git-ignored deploy/.env.
+if (-not $Password) { $Password = $env:POSTGIS_PASSWORD }
+if (-not $Password) {
+    $deployEnv = Join-Path $root 'deploy\.env'
+    if (Test-Path -LiteralPath $deployEnv) {
+        foreach ($line in Get-Content -LiteralPath $deployEnv) {
+            if ($line -match '^\s*POSTGIS_PASSWORD\s*=\s*(.+)$') { $Password = $Matches[1].Trim().Trim('"'); break }
+        }
+    }
+}
+if (-not $Password) { throw 'PostGIS password not configured: fill POSTGIS_PASSWORD in deploy/.env or pass -Password' }
+
 $dataDir = Join-Path $root 'data\osm'
 $pbf = Join-Path $dataDir 'guangxi-latest.osm.pbf'
 $schema = Join-Path $PSScriptRoot 'guilin_schema.sql'

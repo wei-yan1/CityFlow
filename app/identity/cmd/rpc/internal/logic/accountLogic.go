@@ -6,13 +6,10 @@ import (
 
 	"cityflow/app/identity/cmd/rpc/internal/svc"
 	"cityflow/app/identity/cmd/rpc/pb"
-	taskpb "cityflow/app/task/cmd/rpc/pb"
-	"cityflow/internal/domain"
-	"cityflow/internal/domain/auth"
-	"cityflow/internal/domain/rider"
-	"cityflow/internal/domain/user"
-	"cityflow/internal/platform/authn"
-	"cityflow/internal/platform/rpcctx"
+	"cityflow/app/identity/domain/rider"
+	"cityflow/app/identity/domain/user"
+	"cityflow/internal/common/auth"
+	"cityflow/internal/common/domain"
 	"cityflow/internal/platform/rpckit"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -164,7 +161,10 @@ func (l *GetUserAdminLogic) GetUserAdmin(in *identity.IdRequest) (*identity.Json
 	if _, err := l.admin(); err != nil {
 		return nil, err
 	}
-	out, err := l.svcCtx.Accounts.GetUser(l.ctx, in.GetId())
+	if l.svcCtx.Users == nil {
+		return nil, mapError(domain.ErrUnavailable, "")
+	}
+	out, err := l.svcCtx.Users.Profile(l.ctx, in.GetId())
 	if err != nil {
 		return nil, mapError(err, "")
 	}
@@ -247,13 +247,6 @@ func (l *ListRiderRegistrationsLogic) ListRiderRegistrations(in *identity.ListQu
 	return jsonReply(map[string]any{"data": out, "limit": page.Limit, "offset": page.Offset})
 }
 
-// sagaStore is the Identity-owned half of rider approval; the rider performance
-// profile is provisioned in Task over RPC.
-type sagaStore interface {
-	ApproveRiderRegistrationAccount(ctx context.Context, id, adminID, note string) (*rider.Registration, error)
-	RevertRiderRegistration(ctx context.Context, id, userID string) error
-}
-
 type ApproveRiderRegistrationLogic struct{ baseLogic }
 
 func NewApproveRiderRegistrationLogic(ctx context.Context, s *svc.ServiceContext) *ApproveRiderRegistrationLogic {
@@ -272,41 +265,11 @@ func (l *ApproveRiderRegistrationLogic) ApproveRiderRegistration(in *identity.Id
 			return nil, mapError(err, "")
 		}
 	}
-	store, ok := l.svcCtx.Accounts.(sagaStore)
-	if !ok {
+	if l.svcCtx.Riders == nil {
 		return nil, mapError(domain.ErrUnavailable, "")
 	}
-	if !l.svcCtx.EventsEnabled && l.svcCtx.Task == nil {
-		return nil, mapError(domain.ErrUnavailable, "")
-	}
-	reg, err := store.ApproveRiderRegistrationAccount(l.ctx, in.GetId(), claims.Subject, body.Note)
+	reg, err := l.svcCtx.Riders.Approve(l.ctx, in.GetId(), claims.Subject, body.Note)
 	if err != nil {
-		return nil, mapError(err, "")
-	}
-	// With the outbox enabled, approval is already durable and Task provisions
-	// the rider profile after consuming rider.approved.v1. The synchronous RPC
-	// remains only as a fallback for local deployments without a broker.
-	if l.svcCtx.EventsEnabled {
-		return jsonReply(reg)
-	}
-	profile := rider.UpdateRequest{
-		DisplayName: reg.DisplayName, VehicleType: reg.VehicleType, Skills: reg.Skills,
-		ServiceArea: reg.ServiceArea, MaxDistanceMeters: reg.MaxDistanceMeters, MaxConcurrentTasks: reg.MaxConcurrentTasks,
-	}
-	data, _ := json.Marshal(profile)
-	taskCtx := l.ctx
-	if token, ok := authn.BearerFromMetadata(l.ctx); ok {
-		taskCtx = rpcctx.WithBearer(l.ctx, token)
-	}
-	if _, err := l.svcCtx.Task.ProvisionRider(taskCtx, &taskpb.IdBody{Id: reg.UserID, BodyJson: data}); err != nil {
-		_ = store.RevertRiderRegistration(l.ctx, reg.ID, reg.UserID)
-		// ProvisionRider may have inserted the Task profile before failing (for
-		// example while loading it back). Archive it best-effort so compensation
-		// does not leave an orphaned profile pointing at a deleted account.
-		_, _ = l.svcCtx.Task.ArchiveRider(taskCtx, &taskpb.IdRequest{Id: reg.UserID})
-		if l.svcCtx.Users != nil {
-			_, _ = l.svcCtx.Users.DisableAccount(l.ctx, reg.UserID)
-		}
 		return nil, mapError(err, "")
 	}
 	return jsonReply(reg)
@@ -344,7 +307,10 @@ func (l *GetUserInternalLogic) GetUserInternal(in *identity.IdRequest) (*identit
 	if _, err := rpckit.Claims(l.ctx); err != nil {
 		return nil, err
 	}
-	out, err := l.svcCtx.Accounts.GetUser(l.ctx, in.GetId())
+	if l.svcCtx.Users == nil {
+		return nil, mapError(domain.ErrUnavailable, "")
+	}
+	out, err := l.svcCtx.Users.Profile(l.ctx, in.GetId())
 	if err != nil {
 		return nil, mapError(err, "")
 	}

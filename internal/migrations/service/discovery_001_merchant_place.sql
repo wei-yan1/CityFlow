@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS merchant_profiles (
     amap_poi_id         VARCHAR(128) NULL,
     business_status     VARCHAR(20) NOT NULL DEFAULT 'CLOSED',
     service_types       JSON NOT NULL,
-    capacity_per_hour   INT UNSIGNED NOT NULL DEFAULT 0,
+    capacity_per_hour   INT UNSIGNED NOT NULL DEFAULT 1,
     preparation_minutes SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     business_hours      JSON NOT NULL,
     is_archived         TINYINT(1) NOT NULL DEFAULT 0,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS merchant_media (
 
 CREATE TABLE IF NOT EXISTS place_reviews (
     id             CHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
-    order_id       CHAR(36) NULL,
+    task_id        CHAR(36) NULL,
     place_source   VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     place_id       VARCHAR(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
     user_id        CHAR(36) NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS place_reviews (
     comment        VARCHAR(500) NOT NULL DEFAULT '',
     created_at     DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     PRIMARY KEY (id),
-    UNIQUE KEY place_reviews_order_unique (order_id, place_source, place_id, user_id),
+    UNIQUE KEY place_reviews_task_unique (task_id, place_source, place_id, user_id),
     KEY place_reviews_place (place_source, place_id, created_at, id),
     KEY place_reviews_user_created (user_id, created_at, id),
     CONSTRAINT place_reviews_rating CHECK (rating BETWEEN 1 AND 5)
@@ -73,3 +73,4 @@ CREATE TABLE IF NOT EXISTS trusted_places (
     expires_at  DATETIME(3) NOT NULL,
     INDEX trusted_places_expiry_idx (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+

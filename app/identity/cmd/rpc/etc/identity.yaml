@@ -1,11 +1,11 @@
 Name: identity.rpc
-ListenOn: 0.0.0.0:8090
+ListenOn: 127.0.0.1:8090
 Mode: dev
 Timeout: 10000
 DataSource: ""
 JWTSecret: ""
 RabbitMQURL: ""
-SeedDemo: true
+SeedDemo: false
 RedisAddr: ""
 RedisPassword: ""
 RedisDB: 0
@@ -13,3 +13,11 @@ TaskRpc:
   Endpoints:
     - 127.0.0.1:8091
   NonBlock: true
+XXLJob:
+  Enabled: false
+  ServerAddr: "http://127.0.0.1:8080/xxl-job-admin"
+  AccessToken: ""
+  RegistryKey: "cityflow-identity"
+  ExecutorIP: ""
+  ExecutorPort: "10003"
+  TimeoutSeconds: 3

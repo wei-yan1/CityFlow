@@ -13,7 +13,9 @@ import (
 	discoveryclient "cityflow/app/discovery/cmd/rpc/discoveryclient"
 	"cityflow/app/gateway/cmd/api/internal/config"
 	identityclient "cityflow/app/identity/cmd/rpc/identityclient"
+	notificationclient "cityflow/app/notification/cmd/rpc/notificationclient"
 	paymentclient "cityflow/app/payment/cmd/rpc/paymentclient"
+	promotionclient "cityflow/app/promotion/cmd/rpc/promotionclient"
 	reactionclient "cityflow/app/reaction/cmd/rpc/reactionclient"
 	taskclient "cityflow/app/task/cmd/rpc/taskclient"
 	trackingclient "cityflow/app/tracking/cmd/rpc/trackingclient"
@@ -26,15 +28,17 @@ import (
 )
 
 type ServiceContext struct {
-	Config    config.Config
-	Identity  identityclient.Identity
-	Task      taskclient.Task
-	Discovery discoveryclient.Discovery
-	Payment   paymentclient.Payment
-	Tracking  trackingclient.Tracking
-	Reaction  reactionclient.Reaction
-	Secret    []byte
-	Status    *authn.StatusCache
+	Config       config.Config
+	Identity     identityclient.Identity
+	Task         taskclient.Task
+	Discovery    discoveryclient.Discovery
+	Payment      paymentclient.Payment
+	Tracking     trackingclient.Tracking
+	Promotion    promotionclient.Promotion
+	Notification notificationclient.Notification
+	Reaction     reactionclient.Reaction
+	Secret       []byte
+	Status       *authn.StatusCache
 }
 
 func NewServiceContext(c config.Config) (*ServiceContext, error) {
@@ -53,13 +57,14 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 	if len(c.TrackingRPC.Endpoints) == 0 {
 		return nil, errors.New("TrackingRPC.Endpoints is required")
 	}
-	var reactionRPC zrpc.Client
-	if len(c.ReactionRPC.Endpoints) > 0 {
-		var err error
-		reactionRPC, err = zrpc.NewClient(c.ReactionRPC)
-		if err != nil {
-			return nil, fmt.Errorf("reaction rpc client: %w", err)
-		}
+	if len(c.PromotionRPC.Endpoints) == 0 {
+		return nil, errors.New("PromotionRPC.Endpoints is required")
+	}
+	if len(c.NotificationRPC.Endpoints) == 0 {
+		return nil, errors.New("NotificationRPC.Endpoints is required")
+	}
+	if len(c.ReactionRPC.Endpoints) == 0 {
+		return nil, errors.New("ReactionRPC.Endpoints is required")
 	}
 	identityRPC, err := zrpc.NewClient(c.IdentityRPC)
 	if err != nil {
@@ -82,14 +87,25 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 	if err != nil {
 		return nil, fmt.Errorf("tracking rpc client: %w", err)
 	}
+	promotionRPC, err := zrpc.NewClient(c.PromotionRPC)
+	if err != nil {
+		return nil, fmt.Errorf("promotion rpc client: %w", err)
+	}
+	notificationRPC, err := zrpc.NewClient(c.NotificationRPC)
+	if err != nil {
+		return nil, fmt.Errorf("notification rpc client: %w", err)
+	}
+	reactionRPC, err := zrpc.NewClient(c.ReactionRPC)
+	if err != nil {
+		return nil, fmt.Errorf("reaction rpc client: %w", err)
+	}
 
 	secret := strings.TrimSpace(c.JWTSecret)
 	if secret == "" {
 		secret = strings.TrimSpace(os.Getenv("CITYFLOW_JWT_SECRET"))
 	}
 	if secret == "" {
-		secret = "CHANGE_ME_JWT_SECRET"
-		log.Printf("warning: JWT secret is not set; using development secret")
+		log.Fatalf("JWT secret is not configured: set CITYFLOW_JWT_SECRET in .env")
 	}
 
 	statusTTL := time.Duration(c.AuthStatusCacheTTLSeconds) * time.Second
@@ -121,23 +137,18 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 	})
 
 	return &ServiceContext{
-		Config:    c,
-		Identity:  identity,
-		Task:      taskclient.NewTask(taskRPC),
-		Discovery: discovery,
-		Payment:   payment,
-		Tracking:  tracking,
-		Reaction:  reactionClientOrNil(reactionRPC),
-		Secret:    []byte(secret),
-		Status:    statusCache,
+		Config:       c,
+		Identity:     identity,
+		Task:         taskclient.NewTask(taskRPC),
+		Discovery:    discovery,
+		Payment:      payment,
+		Tracking:     tracking,
+		Promotion:    promotionclient.NewPromotion(promotionRPC),
+		Notification: notificationclient.NewNotification(notificationRPC),
+		Reaction:     reactionclient.NewReaction(reactionRPC),
+		Secret:       []byte(secret),
+		Status:       statusCache,
 	}, nil
-}
-
-func reactionClientOrNil(client zrpc.Client) reactionclient.Reaction {
-	if client == nil {
-		return nil
-	}
-	return reactionclient.NewReaction(client)
 }
 
 func (s *ServiceContext) Ready(ctx context.Context) error {
@@ -157,6 +168,15 @@ func (s *ServiceContext) Ready(ctx context.Context) error {
 	}
 	if _, err := s.Tracking.Health(ctx, &trackingclient.Empty{}); err != nil {
 		return fmt.Errorf("tracking rpc: %w", err)
+	}
+	if _, err := s.Promotion.Health(ctx, &promotionclient.Empty{}); err != nil {
+		return fmt.Errorf("promotion rpc: %w", err)
+	}
+	if _, err := s.Notification.Health(ctx, &notificationclient.Empty{}); err != nil {
+		return fmt.Errorf("notification rpc: %w", err)
+	}
+	if _, err := s.Reaction.Health(ctx, &reactionclient.HealthReq{}); err != nil {
+		return fmt.Errorf("reaction rpc: %w", err)
 	}
 	return nil
 }

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#182b32">
+  <title>兑换码管理 · CityFlow</title>
+  <link rel="stylesheet" href="/assets/shared/app.css?v=20261122-formal6">
+  <style>
+    .redeem-form { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); background: #fbfdfb; }
+    .redeem-form label { display: flex; flex-direction: column; gap: 6px; color: #5f7168; font-size: 12px; font-weight: 700; }
+    .redeem-form input, .redeem-form select, .redeem-form textarea { height: 38px; padding: 0 10px; border: 1px solid #d5dfd7; border-radius: 7px; background: #fff; color: #213b32; font: inherit; font-size: 13px; }
+    .redeem-form textarea { height: 72px; padding: 9px 10px; resize: vertical; }
+    .redeem-form .span-3 { grid-column: span 3; }
+    .redeem-form .span-4 { grid-column: span 4; }
+    .redeem-form .span-6 { grid-column: span 6; }
+    .redeem-form .span-12 { grid-column: span 12; }
+    .redeem-form-actions { display: flex; align-items: end; gap: 8px; }
+    .redeem-filters { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+    .redeem-table { table-layout: fixed; }
+    .redeem-table th:nth-child(1), .redeem-table td:nth-child(1) { width: 15%; }
+    .redeem-table th:nth-child(2), .redeem-table td:nth-child(2) { width: 25%; }
+    .redeem-table th:nth-child(3), .redeem-table td:nth-child(3) { width: 15%; }
+    .redeem-table th:nth-child(4), .redeem-table td:nth-child(4) { width: 16%; }
+    .redeem-table th:nth-child(5), .redeem-table td:nth-child(5) { width: 13%; }
+    .redeem-table th:nth-child(6), .redeem-table td:nth-child(6) { width: 16%; }
+    .redeem-filters input, .redeem-filters select { height: 34px; padding: 0 9px; border: 1px solid #d5dfd7; border-radius: 6px; background: #fff; color: #213b32; font-size: 12px; }
+    .redeem-code { font-family: "Cascadia Code", Consolas, monospace; font-weight: 700; letter-spacing: .08em; }
+    .redeem-row-actions { display: flex; gap: 6px; flex-wrap: nowrap; justify-content: flex-end; }
+    .redeem-row-actions .button { padding: 4px 6px; font-size: 11px; white-space: nowrap; }
+    .redeem-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; color: #6b7c73; font-size: 12px; }
+    @media (max-width: 900px) {
+      .redeem-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .redeem-form .span-3, .redeem-form .span-4, .redeem-form .span-6, .redeem-form .span-12 { grid-column: span 2; }
+    }
+  </style>
+</head>
+<body class="platform-page">
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <a class="brand admin-brand" href="/admin" aria-label="CityFlow 调度工作台">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>CITYFLOW<small>即时服务调度</small></span>
+      </a>
+      <nav class="side-nav" aria-label="平台管理">
+        <a class="nav-item" href="/admin">任务调度</a>
+        <a class="nav-item active" href="/admin/redeem-codes">兑换码管理</a>
+      </nav>
+      <div class="side-spacer"></div>
+      <button class="side-logout" data-logout>退出平台</button>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="crumb"><span>平台</span><b>/</b><strong>兑换码管理</strong></div>
+        <div class="top-actions"><span id="welcome" class="welcome"></span><button id="refresh" class="button outline">刷新</button></div>
+      </header>
+      <div class="admin-content">
+        <section class="admin-heading">
+          <div class="heading-copy"><h1>兑换码管理</h1></div>
+          </section>
+
+        <div id="notice" class="notice" role="status" aria-live="polite"></div>
+
+        <section class="work-panel">
+          <div class="panel-toolbar">
+            <div class="panel-title"><h2>批量生成</h2></div>
+          </div>
+          <form id="redeemForm" class="redeem-form">
+            <label class="span-4">优惠券<select id="couponSelect" name="coupon_id" required></select></label>
+            <label class="span-3">生成数量<input id="codeCount" name="count" type="number" min="1" max="5000" value="10" required></label>
+            <label class="span-3">每码可兑换人数<input id="maxRedeem" name="max_redeem" type="number" min="1" value="100" required></label>
+            <label class="span-4">批次号（可选）<input id="batchNo" name="batch_no" maxlength="64"></label>
+            <label class="span-4">开始时间（可选）<input id="startsAt" name="starts_at" type="datetime-local"></label>
+            <label class="span-4">结束时间（可选）<input id="endsAt" name="ends_at" type="datetime-local"></label>
+            <label class="span-12">备注<input id="codeNote" name="note" maxlength="255"></label>
+            <div class="span-12 redeem-form-actions"><button class="button primary" type="submit">生成兑换码</button></div>
+          </form>
+
+          <div class="panel-toolbar">
+            <div class="panel-title"><h2>兑换码列表</h2><span id="resultCount" class="result-count">加载中</span></div>
+            <div class="redeem-filters">
+              <select id="filterCoupon" aria-label="按优惠券筛选"><option value="">全部优惠券</option></select>
+              <input id="filterBatch" type="search" placeholder="批次号" autocomplete="off">
+              <select id="filterStatus" aria-label="按状态筛选"><option value="">全部状态</option><option value="ACTIVE">可兑换</option><option value="DISABLED">已停用</option></select>
+              <button id="exportButton" class="button outline" type="button">导出 CSV</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table redeem-table">
+              <thead><tr><th>兑换码</th><th>优惠券与批次</th><th>状态与名额</th><th>有效期</th><th>生成与备注</th><th class="actions-head">操作</th></tr></thead>
+              <tbody id="codeTableBody"><tr><td colspan="6" class="table-empty">正在加载兑换码…</td></tr></tbody>
+            </table>
+          </div>
+          <div class="redeem-pagination"><span id="pageLabel">第 1 页</span><div class="page-actions"><button class="button outline" id="previousPage" type="button">上一页</button><button class="button outline" id="nextPage" type="button">下一页</button></div></div>
+        </section>
+        </div>
+    </main>
+  </div>
+  <script src="/assets/shared/common.js?v=20261122-formal6" defer></script>
+  <script src="/assets/platform/redeem-codes.js?v=20261122-formal6" defer></script>
+</body>
+</html>

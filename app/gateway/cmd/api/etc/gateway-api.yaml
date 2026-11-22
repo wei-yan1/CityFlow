@@ -38,9 +38,19 @@ TrackingRPC:
     - 127.0.0.1:8095
   NonBlock: true
   Timeout: 5000
+PromotionRPC:
+  Endpoints:
+    - 127.0.0.1:8098
+  NonBlock: true
+  Timeout: 5000
+NotificationRPC:
+  Endpoints:
+    - 127.0.0.1:8099
+  NonBlock: true
+  Timeout: 5000
 ReactionRPC:
   Endpoints:
     - 127.0.0.1:8097
   NonBlock: true
-  Timeout: 800
+  Timeout: 5000
 TrackingStreamURL: http://127.0.0.1:8093

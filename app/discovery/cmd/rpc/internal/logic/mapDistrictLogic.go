@@ -7,7 +7,7 @@ import (
 
 	"cityflow/app/discovery/cmd/rpc/internal/svc"
 	"cityflow/app/discovery/cmd/rpc/pb"
-	"cityflow/internal/domain"
+	"cityflow/internal/common/domain"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"google.golang.org/grpc/codes"

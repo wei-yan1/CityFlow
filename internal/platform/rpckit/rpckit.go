@@ -11,9 +11,9 @@ import (
 	"io"
 	"strings"
 
-	"cityflow/internal/application/repository"
-	"cityflow/internal/domain"
-	"cityflow/internal/domain/auth"
+	auth "cityflow/internal/common/auth"
+	"cityflow/internal/common/domain"
+	"cityflow/internal/common/pagination"
 	"cityflow/internal/platform/authctx"
 
 	"google.golang.org/grpc/codes"
@@ -87,8 +87,8 @@ func Error(err error, service string) error {
 	}
 }
 
-func Page(limit, offset int32) (repository.Page, error) {
-	page := repository.Page{Limit: 50}
+func Page(limit, offset int32) (pagination.Page, error) {
+	page := pagination.Page{Limit: 50}
 	if limit != 0 {
 		if limit < 1 || limit > 200 {
 			return page, errors.New("limit must be between 1 and 200")

@@ -21,12 +21,11 @@ function modeFromPath(){
 async function login(email,password){
   const response=await fetch('/api/v1/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
   const result=await response.json().catch(()=>({}));
-  if(!response.ok) throw new Error(result.error||'登录失败');
+  if(!response.ok) throw new Error(friendlyError(result.error,response.status));
   saveToken(result.access_token);
   location.replace(routeForRole(result.user.role));
 }
 
-document.querySelectorAll('[data-email]').forEach(button=>button.addEventListener('click',()=>{document.querySelector('#email').value=button.dataset.email;document.querySelector('#password').value='cityflow123';const role=button.querySelector('strong')?.textContent||'测试';message.textContent=`已填入${role}账号和密码，点击登录继续。`}));
 tabs.forEach(tab=>tab.addEventListener('click',()=>showMode(tab.dataset.authMode)));
 showMode(modeFromPath());
 
@@ -44,7 +43,7 @@ registerForm.addEventListener('submit',async event=>{
   try{
     const response=await fetch('/api/v1/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.querySelector('#registerName').value.trim(),email,phone:document.querySelector('#registerPhone').value.trim(),password})});
     const result=await response.json().catch(()=>({}));
-    if(!response.ok) throw new Error(result.error||'注册失败');
+    if(!response.ok) throw new Error(friendlyError(result.error,response.status));
     registerMessage.textContent='账号已创建，正在登录…';
     await login(email,password);
   }catch(error){registerMessage.textContent=error.message}
@@ -58,16 +57,16 @@ resetRequestForm.addEventListener('submit',async event=>{
   try{
     const response=await fetch('/api/v1/auth/password-reset/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
     const result=await response.json().catch(()=>({}));
-    if(!response.ok) throw new Error(result.error||'找回服务暂不可用');
+    if(!response.ok) throw new Error(friendlyError(result.error,response.status));
     document.querySelector('#resetConfirmEmail').value=email;
     if(result.dev_token){
       const box=document.querySelector('#resetTokenBox');
       box.hidden=false;
       document.querySelector('#resetTokenValue').textContent=result.dev_token;
       document.querySelector('#resetToken').value=result.dev_token;
-      notice.textContent='重置码已生成，15 分钟内有效。';
+      notice.textContent='重置码已生成。';
     }else{
-      notice.textContent=result.message||'如果该邮箱已注册，重置码已生成，请查收邮件。';
+      notice.textContent='重置码已生成，请在下方完成密码重置。';
     }
   }catch(error){notice.textContent=error.message}
 });
@@ -79,7 +78,7 @@ document.querySelector('#resetConfirmForm').addEventListener('submit',async even
   try{
     const response=await fetch('/api/v1/auth/password-reset/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.querySelector('#resetConfirmEmail').value.trim(),token:document.querySelector('#resetToken').value.trim(),new_password:document.querySelector('#resetPassword').value})});
     const result=response.status===204?{}:await response.json().catch(()=>({}));
-    if(!response.ok) throw new Error(result.error||'重置失败');
+    if(!response.ok) throw new Error(friendlyError(result.error,response.status));
     document.querySelector('#email').value=document.querySelector('#resetConfirmEmail').value.trim();
     showMode('login');
     message.textContent='密码已重置，请用新密码登录。';

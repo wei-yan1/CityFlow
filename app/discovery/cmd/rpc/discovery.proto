@@ -14,7 +14,7 @@ message AdminReviewQuery { string source = 1; string place_id = 2; int32 limit =
 message QueryRequest { bytes query_json = 1; }
 message PlaceRequest { string source = 1; string id = 2; string user_id = 3; int32 offset = 4; bytes body_json = 5; }
 message CommentRequest { string review_id = 1; string parent_id = 2; bytes body_json = 3; }
-message CommentListRequest { string review_id = 1; string cursor = 2; int32 limit = 3; }
+message CommentListRequest { string review_id = 1; string cursor = 2; int32 limit = 3; string sort = 4; }
 message CommentThreadRequest { string review_id = 1; string root_id = 2; int32 limit = 3; }
 message UploadRequest { bytes data = 1; string content_type = 2; }
 
@@ -51,13 +51,18 @@ service Discovery {
   rpc ListPlaceReviewsAdmin(AdminReviewQuery) returns (JsonReply);
   rpc RevealPlaceReviewIdentity(IdBody) returns (JsonReply);
 
+  rpc SetReaction(JsonBody) returns (JsonReply);
+  rpc ReactionStates(JsonBody) returns (JsonReply);
+  rpc ListMyReactions(JsonBody) returns (JsonReply);
+  rpc ListHotMerchants(JsonBody) returns (JsonReply);
+  rpc MerchantLikeStats(JsonBody) returns (JsonReply);
+
   rpc ListMerchants(ListQuery) returns (JsonReply);
   rpc CreateMerchant(IdBody) returns (JsonReply);
   rpc GetMerchantAdmin(IdRequest) returns (JsonReply);
   rpc UpdateMerchant(IdBody) returns (JsonReply);
   rpc ArchiveMerchant(IdRequest) returns (JsonReply);
 
-  rpc FindTrustedPlacesInternal(JsonBody) returns (JsonReply);
-  rpc SaveTrustedPlacesInternal(JsonBody) returns (JsonReply);
+  rpc ResolveTrustedPlacesInternal(JsonBody) returns (JsonReply);
   rpc InvalidateMapCache(Empty) returns (JsonReply);
 }

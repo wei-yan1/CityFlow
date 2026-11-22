@@ -6,12 +6,12 @@ import (
 
 	"cityflow/app/task/cmd/rpc/internal/svc"
 	"cityflow/app/task/cmd/rpc/pb"
-	"cityflow/internal/domain"
-	"cityflow/internal/domain/auth"
-	"cityflow/internal/domain/feedback"
-	"cityflow/internal/domain/location"
-	"cityflow/internal/domain/rider"
-	taskdomain "cityflow/internal/domain/task"
+	"cityflow/app/task/domain/feedback"
+	"cityflow/app/task/domain/rider"
+	taskdomain "cityflow/app/task/domain/task"
+	"cityflow/internal/common/auth"
+	"cityflow/internal/common/domain"
+	"cityflow/internal/common/location"
 	"cityflow/internal/platform/authn"
 
 	"github.com/zeromicro/go-zero/core/logx"

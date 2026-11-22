@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"cityflow/internal/domain"
-	"cityflow/internal/domain/auth"
+	auth "cityflow/internal/common/auth"
+	"cityflow/internal/common/domain"
 	"cityflow/internal/platform/authctx"
 	"cityflow/internal/security"
 
@@ -60,6 +60,30 @@ func BearerFromMetadata(ctx context.Context) (string, bool) {
 	}
 	token := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
 	return token, token != ""
+}
+
+// OptionalUnaryServerInterceptor allows anonymous calls but verifies and
+// attaches claims whenever a bearer token is present. Read-only public
+// endpoints use it so an authenticated caller still gets user-specific state.
+func OptionalUnaryServerInterceptor(secret []byte, active AccountActive) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		token, ok := BearerFromMetadata(ctx)
+		if !ok {
+			return handler(ctx, req)
+		}
+		claims, err := FromToken(ctx, token, secret, active)
+		if err != nil {
+			switch {
+			case err == domain.ErrUnauthorized:
+				return nil, status.Error(codes.Unauthenticated, "authentication required")
+			case err == domain.ErrUnavailable:
+				return nil, status.Error(codes.Unavailable, "identity service unavailable")
+			default:
+				return nil, status.Error(codes.Internal, "authentication failed")
+			}
+		}
+		return handler(authctx.WithClaims(ctx, claims), req)
+	}
 }
 
 // UnaryServerInterceptor enforces bearer authentication on every RPC method

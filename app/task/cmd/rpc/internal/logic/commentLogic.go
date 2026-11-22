@@ -5,8 +5,8 @@ import (
 
 	"cityflow/app/task/cmd/rpc/internal/svc"
 	"cityflow/app/task/cmd/rpc/pb"
-	"cityflow/internal/domain/auth"
-	"cityflow/internal/domain/comment"
+	"cityflow/app/task/domain/comment"
+	"cityflow/internal/common/auth"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -57,7 +57,7 @@ func (l *ListRiderCommentsLogic) ListRiderComments(in *task.CommentListRequest) 
 	if err != nil {
 		return nil, err
 	}
-	out, err := l.svcCtx.Comments.ListTop(l.ctx, in.GetFeedbackId(), claimsValue.Subject, in.GetCursor(), int(in.GetLimit()))
+	out, err := l.svcCtx.Comments.ListTop(l.ctx, in.GetFeedbackId(), claimsValue.Subject, in.GetSort(), in.GetCursor(), int(in.GetLimit()))
 	if err != nil {
 		return nil, grpcTaskError(err)
 	}

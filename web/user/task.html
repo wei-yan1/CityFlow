@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#182b32">
+  <title>任务详情 · CityFlow</title>
+  <link rel="stylesheet" href="/assets/shared/app.css?v=20261122-formal7">
+  <link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="/assets/shared/map.css?v=20261122-formal7">
+  <link rel="stylesheet" href="/assets/user/task.css?v=20261122-formal7">
+</head>
+<body class="task-page">
+  <header class="task-topbar">
+    <a class="brand" href="/user" aria-label="返回 CityFlow 用户工作台"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>CITYFLOW<small>任务详情</small></span></a>
+    <div class="task-top-actions"><span id="taskWelcome" class="welcome"></span><a class="button outline" href="/user">返回任务列表</a><button class="button outline" data-logout>退出</button></div>
+  </header>
+  <main class="task-shell">
+    <div id="taskNotice" class="notice" role="status" aria-live="polite">正在加载任务…</div>
+    <section class="task-hero card" aria-labelledby="taskTitle">
+      <div class="task-hero-copy">
+        <h1 id="taskTitle">任务详情</h1>
+        <p id="taskRoute" class="task-route">正在加载取送地点…</p>
+        <div id="taskMeta" class="task-meta"></div>
+      </div>
+      <div class="task-hero-side"><span id="taskStatus" class="task-status">加载中</span><strong id="taskPrice" class="task-price">—</strong><span class="task-price-label">任务金额</span></div>
+    </section>
+
+    <div class="task-layout">
+      <div class="task-main">
+        <section class="card task-map-card" aria-label="配送路线">
+          <section id="mapWorkspace" class="map-workspace task-map-workspace" aria-label="任务位置与路线地图">
+            <div class="map-toolbar"><div><h2>取送位置</h2></div><div class="map-actions"></div></div>
+            <div class="map-controls"><label>跟踪任务 <select id="trackedTask" aria-label="选择跟踪任务"><option value="">选择已接单的任务</option></select></label><button id="refreshMap" type="button" class="button outline">刷新地图</button></div>
+            <div id="cityMap" class="city-map" aria-label="任务位置与路线"></div>
+            <div class="map-footer"><div class="map-legend"><span class="legend-shop">商家</span><span class="legend-rider">骑手</span><span class="legend-pickup">取件</span><span class="legend-destination">送达</span></div><span id="mapStatus" role="status" aria-live="polite">地图加载中…</span></div>
+          </section>
+        </section>
+
+        <section id="paymentCard" class="card task-payment" aria-labelledby="paymentTitle">
+          <div class="task-section-heading"><div><h2 id="paymentTitle">支付与结算</h2></div></div>
+          <div id="paymentContent" class="payment-summary"><div class="skeleton-line">正在加载支付状态…</div></div>
+        </section>
+      </div>
+
+      <aside class="task-side">
+        <section id="riderCard" class="card rider-card" aria-labelledby="riderCardTitle">
+          <div class="task-section-heading"><div><h2 id="riderCardTitle">配送骑手</h2></div><span id="riderLive" class="live-pill">等待中</span></div>
+          <div id="riderContent" class="rider-content"><div class="skeleton-line">正在加载骑手资料…</div></div>
+        </section>
+        <section class="card task-contact" aria-labelledby="contactTitle">
+          <div class="task-section-heading"><div><h2 id="contactTitle">交接信息</h2></div></div>
+          <div id="contactContent" class="contact-content"><div class="skeleton-line">正在加载联系人…</div></div>
+        </section>
+        <section class="card task-timeline" aria-labelledby="timelineTitle">
+          <div class="task-section-heading"><div><h2 id="timelineTitle">配送状态</h2></div></div>
+          <ol id="timeline" class="timeline-list"><li class="timeline-empty">正在加载状态…</li></ol>
+        </section>
+      </aside>
+    </div>
+
+    <section class="card task-feedback" aria-labelledby="feedbackTitle">
+      <div class="task-section-heading"><div><h2 id="feedbackTitle">任务反馈</h2></div><button id="reportOpen" type="button" class="button danger-outline">举报骑手</button></div>
+      <div id="feedbackGrid" class="feedback-grid">
+        <div class="feedback-block">
+          <h3>评价骑手</h3>
+          <form id="reviewForm" class="compact-form">
+            <label>星级<select name="rating" required><option value="5">5 星</option><option value="4">4 星</option><option value="3">3 星</option><option value="2">2 星</option><option value="1">1 星</option></select></label>
+            <label>评价内容<textarea name="comment" rows="3" maxlength="500" placeholder="填写本次配送体验"></textarea></label>
+            <button class="button primary" type="submit">提交评价</button>
+            <p id="reviewStatus" class="form-status" role="status"></p>
+          </form>
+        </div>
+        <div id="merchantReviewBlock" class="feedback-block" hidden>
+          <h3>评价商家</h3>
+          <form id="merchantReviewForm" class="compact-form">
+            <label>星级<select name="rating" required><option value="5">5 星</option><option value="4">4 星</option><option value="3">3 星</option><option value="2">2 星</option><option value="1">1 星</option></select></label>
+            <label>评价内容<textarea name="comment" rows="3" maxlength="500" placeholder="填写商家服务体验"></textarea></label>
+            <label class="checkbox-label"><input type="checkbox" name="anonymous"> 匿名评价</label>
+            <button class="button primary" type="submit">提交商家评价</button>
+            <p id="merchantReviewStatus" class="form-status" role="status"></p>
+          </form>
+        </div>
+        <div class="feedback-block">
+          <h3>额外打赏</h3>
+          <div class="tip-presets" role="group" aria-label="快捷打赏金额"><button type="button" class="button outline" data-tip-fen="200">¥2</button><button type="button" class="button outline" data-tip-fen="500">¥5</button><button type="button" class="button outline" data-tip-fen="1000">¥10</button><button type="button" class="button outline" data-tip-fen="2000">¥20</button></div>
+          <form id="tipForm" class="compact-form">
+            <label>其他金额（元）<input name="amount" type="number" min="0.01" max="1000" step="0.01"></label>
+            <label>留言（可选）<input name="message" maxlength="100" placeholder="感谢骑手的配送服务"></label>
+            <button class="button primary" type="submit">提交打赏</button>
+            <p id="tipStatus" class="form-status" role="status"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="reportDialog" class="report-dialog">
+    <form id="reportForm" method="dialog" class="report-form">
+      <div class="dialog-top"><div><h2>举报骑手</h2></div><button type="button" class="icon-button" data-close-report aria-label="关闭">×</button></div>
+      <label class="field">举报原因<select name="reason" required><option value="">请选择</option><option>骑手态度问题</option><option>配送安全风险</option><option>物品损坏或丢失</option><option>路线或送达异常</option><option>其他问题</option></select></label>
+      <label class="field">详细说明<textarea name="details" rows="5" maxlength="1000" placeholder="请说明具体情况" required></textarea></label>
+      <label class="field">图片证据（可选）<input id="reportImages" name="images" type="file" accept="image/*" multiple></label>
+      <div id="reportPreview" class="report-preview" aria-live="polite"></div>
+      <div class="dialog-actions"><button type="button" class="button outline" data-close-report>取消</button><button type="submit" class="button danger">提交举报</button></div>
+      <p id="reportStatus" class="form-status" role="status"></p>
+    </form>
+  </dialog>
+
+  <script src="/assets/shared/common.js?v=20261122-formal7" defer></script>
+  <script src="/assets/shared/geolocation.js" defer></script>
+  <script src="/assets/vendor/leaflet/leaflet.js" defer></script>
+  <script src="/assets/vendor/fleetops/leaflet-tracking-marker.js" defer></script>
+  <script src="/assets/vendor/fleetops/leaflet-adapter.js" defer></script>
+  <script src="/assets/vendor/coordtransform/coordtransform.js" defer></script>
+  <script src="/assets/shared/map-coordinates.js" defer></script>
+  <script src="/assets/shared/map-amap.js?v=20261122-formal7" defer></script>
+  <script src="/assets/shared/map-services.js?v=20261122-formal7" defer></script>
+  <script src="/assets/shared/map-history.js?v=20261122-formal7" defer></script>
+  <script src="/assets/shared/map-city.js?v=20261122-formal7" defer></script>
+  <script src="/assets/shared/map.js?v=20261122-formal7" defer></script>
+  <script src="/assets/user/task.js?v=20261122-formal7" defer></script>
+</body>
+</html>
+
+
+
+

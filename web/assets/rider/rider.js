@@ -41,7 +41,7 @@ async function loadRiderWorkspace() {
     if (generation === workspaceGeneration) {
       openOffset = displayedOpenOffset;
       activeOffset = displayedActiveOffset;
-      showNotice(`任务列表加载失败，请重试：${error.message}`);
+      showNotice('任务列表加载失败，请稍后重试。');
     }
     return false;
   }
@@ -105,6 +105,14 @@ function typeLabel(type) {
   return ({ DELIVERY: '配送', PICKUP: '代取', PURCHASE: '代购', OTHER: '其他' })[type] || type || '任务';
 }
 
+const skillAliases = { '配送': 'DELIVERY', '代取': 'PICKUP', '代购': 'PURCHASE', '其他': 'OTHER' };
+function skillsText(skills) {
+  return (skills || []).map(value => typeLabel(value)).join(', ');
+}
+function parseSkills(text) {
+  return String(text || '').split(/[,，、]/).map(value => value.trim()).filter(Boolean).map(value => skillAliases[value] || value.toUpperCase());
+}
+
 function orderPrice(task) {
   const fen = Number(task?.quoted_amount_fen);
   if (!Number.isFinite(fen) || fen <= 0) return '';
@@ -114,6 +122,11 @@ function orderPrice(task) {
 function fenMoney(fen) {
   const value = Number(fen);
   return Number.isFinite(value) && value > 0 ? `¥${(value / 100).toFixed(2)}` : '¥0.00';
+}
+
+function shortTime(value) {
+  if (!value) return '—';
+  return new Date(value).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
 async function loadWallet() {
@@ -128,7 +141,7 @@ async function loadWallet() {
     payoutAccount = account || null;
     renderWallet();
   } catch (error) {
-    if (host) host.innerHTML = `<div class="empty-state">结算读取失败：${esc(error.message)}</div>`;
+    if (host) host.innerHTML = '<div class="empty-state">结算记录加载失败。</div>';
     if (list) list.innerHTML = '';
   }
 }
@@ -140,13 +153,14 @@ function renderWallet() {
   const pending = settlements.filter(item => ['PENDING', 'PROCESSING'].includes(item.status)).reduce((sum, item) => sum + Number(item.amount_fen || 0), 0);
   const paid = settlements.filter(item => item.status === 'PAID').reduce((sum, item) => sum + Number(item.amount_fen || 0), 0);
   const accountReady = Boolean(payoutAccount?.account && payoutAccount?.provider);
+  const providerLabel = ({ ALIPAY: '支付宝', WECHAT: '微信支付', MOCK: '平台结算' })[payoutAccount?.provider] || payoutAccount?.provider || '';
   host.innerHTML = `
     <div class="rider-wallet-stat"><small>待结算</small><b>${esc(fenMoney(pending))}</b></div>
     <div class="rider-wallet-stat"><small>已到账</small><b>${esc(fenMoney(paid))}</b></div>
-    <div class="rider-wallet-stat rider-wallet-account"><small>收款账户</small><b>${accountReady ? `${esc(payoutAccount.provider)} · 已配置` : '未配置'}</b><p>${accountReady ? '真实渠道打款前会校验账户与渠道是否匹配；实名/四要素校验尚未接入。' : '真实支付宝/微信打款前需要先配置收款账户；本地模拟结算可直接完成。'}</p></div>`;
+    <div class="rider-wallet-stat rider-wallet-account"><small>收款账户</small><b>${accountReady ? `${esc(providerLabel)} · 已设置` : '未设置'}</b></div>`;
   document.querySelector('#openPayout').textContent = accountReady ? '更新收款账户' : '设置收款账户';
   const labels = { PENDING: '待结算', PROCESSING: '结算中', PAID: '已到账', FAILED: '结算失败', UNKNOWN: '状态待核对', CANCELLED: '已取消' };
-  list.innerHTML = settlements.length ? settlements.slice(0, 6).map(item => `<div class="rider-settlement-row"><div><strong>${esc(labels[item.status] || item.status)}</strong><small>任务 ${esc(String(item.task_id || '').slice(0, 8))}… · ${esc(new Date(item.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }))}</small></div><b>${esc(fenMoney(item.amount_fen))}</b></div>`).join('') : '<div class="empty-state">还没有结算记录；完成任务后会自动生成。</div>';
+  list.innerHTML = settlements.length ? settlements.slice(0, 6).map(item => `<div class="rider-settlement-row"><div><strong>任务结算</strong><span>${esc(labels[item.status] || item.status)} · ${esc(shortTime(item.created_at))}</span></div><b>${esc(fenMoney(item.amount_fen))}</b></div>`).join('') : '<div class="empty-state">暂无结算记录。</div>';
 }
 
 function openPayoutEditor() {
@@ -154,7 +168,7 @@ function openPayoutEditor() {
   const form = document.querySelector('#payoutForm');
   form.reset();
   if (payoutAccount?.provider) form.elements.provider.value = payoutAccount.provider;
-  document.querySelector('#payoutNotice').textContent = payoutAccount?.account ? '当前已保存收款账户；重新填写会覆盖原账户。' : '';
+  document.querySelector('#payoutNotice').textContent = payoutAccount?.account ? '已保存收款账户。' : '';
   dialog.showModal();
 }
 
@@ -179,7 +193,7 @@ function riderTaskCard(task, actions = '', options = {}) {
     : '';
   const badgeMarkup = `
     <div class="rider-task-badges">
-      ${price ? `<span class="rider-price"><small>订单价格</small>${esc(price)}</span>` : ''}
+      ${price ? `<span class="rider-price"><small>任务价格</small>${esc(price)}</span>` : ''}
       ${options.recommended ? '<span class="rider-recommend">离你最近</span>' : ''}
       ${Number.isFinite(pickupDistance) ? `<span class="rider-distance pickup">距取件 ${esc(formatDistance(pickupDistance))}</span>` : ''}
       ${Number.isFinite(deliveryDistance) ? `<span class="rider-distance delivery">距送达 ${esc(formatDistance(deliveryDistance))}</span>` : ''}
@@ -207,7 +221,7 @@ function riderTaskCard(task, actions = '', options = {}) {
     ${task.description ? `<p class="rider-task-description">${esc(task.description)}</p>` : ''}
     ${handoverMarkup}
     ${incidentMarkup}
-    <div class="rider-task-foot"><span>${esc(typeLabel(task.type))}</span><span>发布于 ${esc(new Date(task.created_at).toLocaleString('zh-CN'))}</span></div>
+    <div class="rider-task-foot"><span>${esc(typeLabel(task.type))}</span><span>发布于 ${esc(new Date(task.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }))}</span></div>
     ${next}
     ${actions ? `<div class="rider-task-actions">${actions}</div>` : ''}
   </article>`;
@@ -216,48 +230,43 @@ function riderTaskCard(task, actions = '', options = {}) {
 function renderRiderProfile() {
   const profile = riderProfile;
   if (!profile) return;
-  const vehicle = ({ WALK: '步行', BICYCLE: '自行车', E_BIKE: '电动车', CAR: '汽车', OTHER: '其他' })[profile.vehicle_type] || profile.vehicle_type || '未设置车辆';
+  const vehicle = ({ WALK: '步行', BICYCLE: '自行车', E_BIKE: '电动车', CAR: '汽车', OTHER: '其他' })[profile.vehicle_type] || '';
   const name = profile.display_name || '骑手';
   const avatar = name.includes('骑手') ? '骑' : name.slice(0, 1);
-  const status = riderStatus[profile.status] || profile.status || '状态未知';
-  const skills = (profile.skills || []).map(item => typeLabel(item)).join(' · ') || '配送';
+  const status = riderStatus[profile.status] || '';
+  const skills = (profile.skills || []).map(item => typeLabel(item)).join(' · ');
+  const detail = [vehicle, profile.service_area, skills].filter(Boolean).join(' · ');
+  const concurrency = Number(profile.max_concurrent_tasks) > 0 ? `${Number(profile.max_concurrent_tasks)} 单` : '—';
   const availability = document.querySelector('#toggleAvailability');
   if (availability) {
     const online = profile.status === 'AVAILABLE';
     availability.textContent = online ? '下线休息' : '上线接单';
     availability.classList.toggle('is-online', online);
     availability.disabled = profile.status === 'SUSPENDED';
-    availability.title = online ? '下线后不会出现在可接单状态，也不能接新任务' : '上线后仍受服务距离和并行任务上限限制';
+    availability.title = online ? '下线后不再接收新任务。' : '上线后可接收新任务。';
   }
   document.querySelector('#riderProfile').innerHTML = `
     <div class="rider-profile-main">
       <span class="rider-avatar" aria-hidden="true">${esc(avatar)}</span>
-      <div class="rider-profile-copy"><strong>${esc(name)}</strong><small>${esc(vehicle)} · ${esc(profile.service_area || '未设置服务区域')} · ${esc(skills)}</small></div>
+      <div class="rider-profile-copy"><strong>${esc(name)}</strong>${detail ? `<small>${esc(detail)}</small>` : ''}</div>
     </div>
     <div class="rider-profile-stats">
       <span class="rider-profile-stat"><small>评分</small><b>★ ${esc(Number(profile.rating || 0).toFixed(1))}</b></span>
       <span class="rider-profile-stat"><small>累计完成</small><b>${esc(profile.completed_tasks || 0)} 单</b></span>
-      <span class="rider-profile-stat"><small>并行上限</small><b>${esc(profile.max_concurrent_tasks || '—')} 单</b></span>
-      <span class="rider-online">${esc(status)}</span>
+      <span class="rider-profile-stat"><small>同时接单</small><b>${esc(concurrency)}</b></span>
+      ${status ? `<span class="rider-online">${esc(status)}</span>` : ''}
     </div>`;
 }
 
 function renderOpenTasks() {
   const list = sortedOpenTasks();
   const recommendedId = riderPosition && list.length > 1 && Number.isFinite(distanceFor(list[0], sortMode)) ? list[0].id : null;
-  document.querySelector('#openCount').textContent = `本页 ${list.length} 项`;
+  document.querySelector('#openCount').textContent = `可接任务 ${list.length} 项`;
   document.querySelector('#openTasks').innerHTML = list.length
     ? list.map(item => riderTaskCard(item, `<button class="button primary" data-claim="${esc(item.id)}">接下任务</button>`, { recommended: item.id === recommendedId })).join('')
     : (riderProfile?.status === 'OFFLINE'
-      ? `<div class="rider-empty"><span>当前离线，不会看到新任务。上线并共享位置后再接单。</span><button type="button" class="button primary" data-go-online>上线接单</button></div>`
-      : `<div class="rider-empty"><span>当前没有满足服务距离的可接任务，或并行任务已达上限。稍后刷新，或检查骑手服务状态。</span><button type="button" class="button subtle" data-locate>定位后查看</button></div>`);
-  const summary = document.querySelector('#sortSummary');
-  if (summary) {
-    const point = sortMode === 'delivery' ? '送达点' : '取件点';
-    summary.textContent = riderPosition
-      ? `已按${point}直线距离从近到远排序；列表只会显示服务距离内的任务，实际骑行以导航为准。`
-      : '尚未获取本次定位，暂不展示需要位置的开放任务；点击「定位并排序」后再接单。';
-  }
+      ? `<div class="rider-empty"><span>当前离线，上线并共享位置后可接单。</span><button type="button" class="button primary" data-go-online>上线接单</button></div>`
+      : `<div class="rider-empty"><span>暂无可接任务。</span><button type="button" class="button subtle" data-locate>定位后查看</button></div>`);
   document.querySelectorAll('.rider-sort-chip').forEach(chip => {
     const active = chip.dataset.sort === sortMode;
     chip.classList.toggle('is-active', active);
@@ -300,12 +309,12 @@ function renderActiveTasks() {
         ? `<button type="button" class="button ${pending >= 0 ? 'outline' : 'primary'}" ${next === 'COMPLETED' && pending >= 0 ? 'disabled title="请先完成所有取件点"' : ''} data-next="${esc(item.id)}" data-status="${next}">${item.pickup_stops?.length > 1 ? '更新整单状态：' : ''}${esc(statusActionLabel(next))}</button>`
         : '';
       const statusAction = pending >= 0 && statusButton
-        ? `<details class="rider-status-actions"><summary>整单状态操作</summary><p>整单状态与各取件地点的进度分别记录。</p>${statusButton}</details>`
+        ? `<details class="rider-status-actions"><summary>整单状态操作</summary>${statusButton}</details>`
         : statusButton;
       const actions = `${pickupAction}<button type="button" class="button outline" data-map-task="${esc(item.id)}">查看任务地图</button><button type="button" class="button danger-outline" data-report-incident="${esc(item.id)}">上报异常</button>${statusAction}`;
       return riderTaskCard(item, actions, { active: true, nextHint: activeNextHint(item) });
     }).join('')
-    : `<div class="rider-empty"><span>当前没有履约中的任务。接单后，这里会显示下一步操作。</span><button type="button" class="button subtle" data-scroll-open>去看附近任务</button></div>`;
+    : `<div class="rider-empty"><span>暂无履约中的任务。</span><button type="button" class="button subtle" data-scroll-open>查看附近任务</button></div>`;
   document.querySelector('#activeNext').disabled = activeTaskItems.length < 50;
 }
 
@@ -345,17 +354,17 @@ async function toggleAvailability() {
     riderProfile = await api('/api/v1/riders/me/status', { method: 'PUT', body: JSON.stringify({ status: next }) });
     renderRiderProfile();
     await loadRiderWorkspace();
-    showNotice(next === 'AVAILABLE' ? '已上线。接单仍会校验服务距离和并行任务上限。' : '已下线，当前不会接收新任务。', 'success');
+    showNotice(next === 'AVAILABLE' ? '已上线，可接新任务。' : '已下线，当前不再接收新任务。', 'success');
   } catch (error) {
     button.disabled = false;
-    showNotice(error.message);
+    showNotice('接单状态更新失败，请稍后重试。');
   }
 }
 
 async function locateForTaskSort() {
   if (locating) return;
   if (!window.CityFlowLocation) {
-    showNotice('定位组件未载入，请刷新页面后重试。');
+    showNotice('定位服务暂不可用，请稍后重试。');
     return;
   }
   locating = true;
@@ -366,7 +375,7 @@ async function locateForTaskSort() {
     await loadRiderWorkspace();
     showNotice('已获取当前位置，附近任务已按服务距离筛选。', 'success');
   } catch (error) {
-    showNotice(error.message || '定位失败，请稍后重试。');
+    showNotice('定位失败，请稍后重试。');
     renderOpenTasks();
   } finally {
     locating = false;
@@ -382,7 +391,7 @@ async function chooseSort(mode) {
 }
 
 async function archiveRider() {
-  if (!window.confirm('归档后将无法继续接单，历史履约记录会保留。确定归档吗？')) return;
+  if (!(await cfConfirm('归档后将无法继续接单。', { title: '归档骑手资料', confirmText: '归档', danger: true }))) return;
   const button = document.querySelector('#archiveRider');
   const notice = document.querySelector('#riderArchiveNotice');
   button.disabled = true;
@@ -391,10 +400,10 @@ async function archiveRider() {
     await api('/api/v1/riders/me', { method: 'DELETE' });
     riderProfile = null;
     document.querySelector('#riderDialog').close();
-    document.querySelector('#riderProfile').innerHTML = '<div class="empty-state">骑手资料已归档，请联系平台管理员重新建立资料。</div>';
+    document.querySelector('#riderProfile').innerHTML = '<div class="empty-state">骑手资料已归档。</div>';
     showNotice('骑手资料已归档。', 'success');
   } catch (error) {
-    notice.textContent = `归档失败：${error.message}`;
+    notice.textContent = '归档失败，请稍后重试。';
   } finally {
     button.disabled = false;
   }
@@ -405,7 +414,7 @@ function openRiderEditor() {
   document.querySelector('#riderArchiveNotice').textContent = '';
   const form = document.querySelector('#riderForm');
   for (const key of ['display_name', 'vehicle_type', 'service_area', 'max_distance_meters', 'max_concurrent_tasks']) form.elements[key].value = riderProfile[key] ?? '';
-  form.elements.skills.value = (riderProfile.skills || []).join(', ');
+  form.elements.skills.value = skillsText(riderProfile.skills || []);
   document.querySelector('#riderDialog').showModal();
 }
 
@@ -448,7 +457,7 @@ async function uploadIncidentImage(file) {
   data.append('file', file);
   const response = await fetch('/api/v1/uploads', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: data });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || `图片上传失败 (${response.status})`);
+  if (!response.ok) throw new Error(friendlyError(body.error, response.status));
   return body.url;
 }
 
@@ -458,13 +467,13 @@ async function mutateTask(button, path, body) {
     const updated = await api(path, { method: 'POST', body: JSON.stringify(body) });
     const loaded = await loadRiderWorkspace();
     await loadWallet();
-    showNotice(loaded ? '任务状态已更新。' : '操作已成功，但列表刷新失败，请点击刷新。', loaded ? 'success' : 'error');
+    showNotice(loaded ? '任务状态已更新。' : '操作已提交，请刷新页面。', loaded ? 'success' : 'error');
     if (path.endsWith('/claim')) {
-      try { await openRiderMap(updated.id); } catch { showNotice('接单成功，地图暂时无法打开，请重试。'); }
+      try { await openRiderMap(updated.id); } catch { showNotice('已接单，地图暂时无法加载。'); }
     }
   } catch (error) {
     button.disabled = false;
-    showNotice(error.status === 409 ? (error.message || '任务状态已变化，请刷新后重试。') : error.message);
+    showNotice(error.status === 409 ? '任务状态已变化，请刷新后重试。' : '操作失败，请稍后重试。');
   }
 }
 
@@ -512,10 +521,10 @@ async function openRiderMap(id) {
       document.querySelector('#incidentDialog').close();
       clearIncidentPreviews();
       await loadRiderWorkspace();
-      showNotice('异常已提交，平台处理后会更新订单记录。', 'success');
+      showNotice('异常已提交，平台处理后会更新任务记录。', 'success');
     } catch (error) {
       status.style.color = '#a04b3e';
-      status.textContent = error.message;
+      status.textContent = '收款账户保存失败，请稍后重试。';
     } finally { button.disabled = false; }
   });
   document.querySelector('#openPayout').addEventListener('click', openPayoutEditor);
@@ -533,13 +542,13 @@ async function openRiderMap(id) {
       document.querySelector('#payoutDialog').close();
       renderWallet();
       showNotice('收款账户已保存。', 'success');
-    } catch (error) { status.style.color = '#a04b3e'; status.textContent = error.message; }
+    } catch (error) { status.style.color = '#a04b3e'; status.textContent = '收款账户保存失败，请稍后重试。'; }
     finally { button.disabled = false; }
   });
   document.querySelector('#riderForm').addEventListener('submit', async event => {
     event.preventDefault();
     const body = Object.fromEntries(new FormData(event.currentTarget).entries());
-    body.skills = body.skills.split(',').map(value => value.trim()).filter(Boolean);
+    body.skills = parseSkills(body.skills);
     body.max_distance_meters = Number(body.max_distance_meters);
     body.max_concurrent_tasks = Number(body.max_concurrent_tasks);
     try {
@@ -548,7 +557,7 @@ async function openRiderMap(id) {
       renderRiderProfile();
       showNotice('骑手服务资料已保存。', 'success');
     } catch (error) {
-      showNotice(error.message);
+      showNotice('服务资料保存失败，请稍后重试。');
     }
   });
   document.querySelector('.rider-sort-bar').addEventListener('click', event => {
@@ -563,7 +572,7 @@ async function openRiderMap(id) {
     const button = event.target.closest('[data-claim]');
     if (button) mutateTask(button, `/api/v1/tasks/${encodeURIComponent(button.dataset.claim)}/claim`, {});
   });
-  document.querySelector('#activeTasks').addEventListener('click', event => {
+  document.querySelector('#activeTasks').addEventListener('click', async event => {
     const scrollOpen = event.target.closest('[data-scroll-open]');
     if (scrollOpen) { document.querySelector('#openTasksPanel').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     const pickup = event.target.closest('[data-pickup-task]');
@@ -577,7 +586,7 @@ async function openRiderMap(id) {
     if (incidentButton) { openIncidentDialog(incidentButton.dataset.reportIncident); return; }
     const button = event.target.closest('[data-next]');
     if (button) {
-      if (button.dataset.status === 'COMPLETED' && !confirm('确认已完成这项任务？')) return;
+      if (button.dataset.status === 'COMPLETED' && !(await cfConfirm('确认后任务将标记为已完成。', { title: '完成任务', confirmText: '确认完成' }))) return;
       mutateTask(button, `/api/v1/tasks/${encodeURIComponent(button.dataset.next)}/status`, { status: button.dataset.status });
     }
   });
@@ -596,3 +605,4 @@ async function openRiderMap(id) {
     if (event.currentTarget.open) (await CityFlowMapReady)?.map.invalidateSize();
   });
 })();
+

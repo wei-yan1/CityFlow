@@ -37,26 +37,21 @@ func main() {
 		}
 	}()
 
-	workCtx, cancelWork := context.WithCancel(context.Background())
-	defer cancelWork()
+	workCtx, stopWorkers := context.WithCancel(context.Background())
+	defer stopWorkers()
 	ctx.StartWorkers(workCtx)
 
-	grpcServer := zrpc.MustNewServer(c.RpcServerConf, func(server *grpc.Server) {
-		pb.RegisterReactionServer(server, serverlogic(ctx))
+	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
+		pb.RegisterReactionServer(grpcServer, server.NewReactionServer(ctx))
 		if c.Mode == service.DevMode || c.Mode == service.TestMode {
-			reflection.Register(server)
+			reflection.Register(grpcServer)
 		}
 	})
-	grpcServer.AddUnaryInterceptors(authn.UnaryServerInterceptor(ctx.Secret, ctx.AccountActive,
-		"/reaction.Reaction/Health",
-		"/reaction.Reaction/GetReactionState",
-	))
-	defer grpcServer.Stop()
+	// Reads may be anonymous; SetReaction and ListMine still require claims in
+	// the logic layer. A supplied but invalid bearer token is always rejected.
+	s.AddUnaryInterceptors(authn.OptionalUnaryServerInterceptor(ctx.Secret, ctx.AccountActive))
+	defer s.Stop()
 
 	fmt.Printf("Starting reaction rpc server at %s...\n", c.ListenOn)
-	grpcServer.Start()
-}
-
-func serverlogic(ctx *svc.ServiceContext) pb.ReactionServer {
-	return server.NewReactionServer(ctx)
+	s.Start()
 }

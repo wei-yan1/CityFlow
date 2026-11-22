@@ -9,12 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"cityflow/internal/domain/auth"
-	"cityflow/internal/domain/user"
+	"cityflow/internal/common/auth"
 )
 
-func SignJWT(account *user.User, secret []byte, now time.Time) (string, time.Time, error) {
-	return SignClaims(auth.Claims{Subject: account.ID, Email: account.Email, Role: account.Role}, secret, now)
+// SignJWT signs the stable identity facts. Callers pass primitives so the
+// shared security package does not import any service's domain model.
+func SignJWT(subject, email, role string, secret []byte, now time.Time) (string, time.Time, error) {
+	return SignClaims(auth.Claims{Subject: subject, Email: email, Role: role}, secret, now)
 }
 
 // SignClaims renews a verified identity; callers must verify the old token and

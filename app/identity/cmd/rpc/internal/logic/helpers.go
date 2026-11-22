@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"cityflow/internal/domain"
-	"cityflow/internal/domain/user"
+	"cityflow/app/identity/domain/user"
+	"cityflow/internal/common/domain"
 
 	"cityflow/app/identity/cmd/rpc/pb"
 

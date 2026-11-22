@@ -28,6 +28,11 @@ func (s *DiscoveryServer) Health(ctx context.Context, in *pb.Empty) (*pb.HealthR
 	return l.Health(in)
 }
 
+func (s *DiscoveryServer) ListHotMerchants(ctx context.Context, in *pb.JsonBody) (*pb.JsonReply, error) {
+	l := logic.NewListHotMerchantsLogic(ctx, s.svcCtx)
+	return l.ListHotMerchants(in)
+}
+
 func (s *DiscoveryServer) GetMyMerchant(ctx context.Context, in *pb.IdRequest) (*pb.JsonReply, error) {
 	l := logic.NewGetMyMerchantLogic(ctx, s.svcCtx)
 	return l.GetMyMerchant(in)
@@ -163,6 +168,21 @@ func (s *DiscoveryServer) RevealPlaceReviewIdentity(ctx context.Context, in *pb.
 	return l.RevealPlaceReviewIdentity(in)
 }
 
+func (s *DiscoveryServer) SetReaction(ctx context.Context, in *pb.JsonBody) (*pb.JsonReply, error) {
+	l := logic.NewSetReactionLogic(ctx, s.svcCtx)
+	return l.SetReaction(in)
+}
+
+func (s *DiscoveryServer) ReactionStates(ctx context.Context, in *pb.JsonBody) (*pb.JsonReply, error) {
+	l := logic.NewGetReactionStateLogic(ctx, s.svcCtx)
+	return l.GetReactionState(in)
+}
+
+func (s *DiscoveryServer) ListMyReactions(ctx context.Context, in *pb.JsonBody) (*pb.JsonReply, error) {
+	l := logic.NewListMineReactionsLogic(ctx, s.svcCtx)
+	return l.ListMineReactions(in)
+}
+
 func (s *DiscoveryServer) ListMerchants(ctx context.Context, in *pb.ListQuery) (*pb.JsonReply, error) {
 	l := logic.NewListMerchantsLogic(ctx, s.svcCtx)
 	return l.ListMerchants(in)
@@ -188,14 +208,9 @@ func (s *DiscoveryServer) ArchiveMerchant(ctx context.Context, in *pb.IdRequest)
 	return l.ArchiveMerchant(in)
 }
 
-func (s *DiscoveryServer) FindTrustedPlacesInternal(ctx context.Context, in *pb.JsonBody) (*pb.JsonReply, error) {
-	l := logic.NewFindTrustedPlacesInternalLogic(ctx, s.svcCtx)
-	return l.FindTrustedPlacesInternal(in)
-}
-
-func (s *DiscoveryServer) SaveTrustedPlacesInternal(ctx context.Context, in *pb.JsonBody) (*pb.JsonReply, error) {
-	l := logic.NewSaveTrustedPlacesInternalLogic(ctx, s.svcCtx)
-	return l.SaveTrustedPlacesInternal(in)
+func (s *DiscoveryServer) ResolveTrustedPlacesInternal(ctx context.Context, in *pb.JsonBody) (*pb.JsonReply, error) {
+	l := logic.NewResolveTrustedPlacesInternalLogic(ctx, s.svcCtx)
+	return l.ResolveTrustedPlacesInternal(in)
 }
 
 func (s *DiscoveryServer) InvalidateMapCache(ctx context.Context, in *pb.Empty) (*pb.JsonReply, error) {

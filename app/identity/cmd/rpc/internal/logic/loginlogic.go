@@ -6,7 +6,7 @@ import (
 
 	"cityflow/app/identity/cmd/rpc/internal/svc"
 	"cityflow/app/identity/cmd/rpc/pb"
-	"cityflow/internal/domain/auth"
+	"cityflow/app/identity/domain/auth"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"google.golang.org/grpc/codes"

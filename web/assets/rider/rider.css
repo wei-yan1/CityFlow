@@ -41,26 +41,12 @@
   z-index: 1;
 }
 
-.rider-hero .eyebrow {
-  margin-bottom: 8px;
-  color: #d5ed87;
-  letter-spacing: .14em;
-}
-
 .rider-hero h1 {
   margin: 0;
   color: #fff;
   font-size: clamp(28px, 3.4vw, 38px);
   line-height: 1.12;
   letter-spacing: -.04em;
-}
-
-.rider-hero p:not(.eyebrow) {
-  max-width: 500px;
-  margin: 9px 0 0;
-  color: #c7d6cd;
-  font-size: 13px;
-  line-height: 1.7;
 }
 
 .rider-hero-actions {
@@ -143,7 +129,7 @@
   display: block;
   margin-top: 4px;
   color: #718078;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -162,7 +148,7 @@
 .rider-profile-stat small {
   display: block;
   color: #7b877f;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .rider-profile-stat b {
@@ -181,7 +167,7 @@
   border-radius: 999px;
   color: #42672f;
   background: #edf5d8;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -216,11 +202,6 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 18px;
-}
-
-.rider-panel-head .eyebrow {
-  margin-bottom: 6px;
-  color: #688077;
 }
 
 .rider-panel-head h2 {
@@ -258,7 +239,7 @@
 .task-pagination .button {
   min-height: 30px;
   padding: 6px 9px;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .rider-sort-bar {
@@ -278,7 +259,7 @@
   align-items: center;
   gap: 7px;
   color: #718078;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .rider-sort-chip {
@@ -288,7 +269,7 @@
   border-radius: 999px;
   color: #486158;
   background: #fff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -365,6 +346,7 @@
   display: inline-flex;
   align-items: baseline;
   gap: 4px;
+  max-width: 230px;
   border-radius: 8px;
   background: #fff3d7;
   color: #9a4d00;
@@ -377,10 +359,8 @@
 
 .rider-price small {
   color: #956b35;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
-}
-  max-width: 230px;
 }
 
 .rider-distance,
@@ -390,7 +370,7 @@
   min-height: 25px;
   padding: 4px 8px;
   border-radius: 5px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -456,7 +436,7 @@
   border-radius: 50%;
   color: #42672f;
   background: #f1f7e6;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -475,7 +455,7 @@
 .rider-route-point small {
   display: block;
   color: #7c887f;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.4;
 }
 
@@ -491,7 +471,7 @@
   display: block;
   margin-top: 3px;
   color: #91704e;
-  font-size: 10px;
+  font-size: 12px;
   font-style: normal;
   line-height: 1.45;
 }
@@ -502,7 +482,7 @@
   border-radius: 6px;
   color: #5d6f66;
   background: #f7f9f4;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
 }
 
@@ -515,7 +495,7 @@
   padding-top: 9px;
   border-top: 1px solid #edf1ea;
   color: #7b877f;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .rider-task-actions {
@@ -539,7 +519,7 @@
   border-radius: 8px;
   background: #fbfcf9;
 }
-.rider-handover p { margin: 0; color: #35463c; font-size: 11px; line-height: 1.6; }
+.rider-handover p { margin: 0; color: #35463c; font-size: 12px; line-height: 1.6; }
 .rider-handover p + p { margin-top: 5px; }
 .rider-handover span { margin-right: 8px; color: #7b8c82; }
 .rider-incident-banner {
@@ -551,7 +531,7 @@
   border-radius: 6px;
   background: #fff8ee;
   color: #7a4a1e;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.55;
 }
 .rider-incident-banner span { color: #8c7357; }
@@ -568,7 +548,7 @@
   border-radius: 7px;
   color: #355c4c;
   background: #f2f7ed;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -579,7 +559,7 @@
 .rider-status-actions {
   flex-basis: 100%;
   color: #687a70;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .rider-status-actions summary {
@@ -637,21 +617,13 @@
   font-size: 14px;
 }
 
-.rider-map-details > summary span:not(.rider-map-toggle) {
-  display: block;
-  margin-top: 3px;
-  color: #748177;
-  font-size: 11px;
-  font-weight: 400;
-}
-
 .rider-map-toggle {
   flex: 0 0 auto;
   padding: 6px 9px;
   border-radius: 999px;
   color: #4f685d;
   background: #eff4ec;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .rider-map-details[open] > summary {
@@ -777,5 +749,5 @@
     align-items: flex-start;
   }
 }
-.rider-wallet-panel{border-top:3px solid #d4b45f}.rider-wallet-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:2px}.rider-wallet-stat{padding:12px;border:1px solid #e3ece4;border-radius:10px;background:#f8fbf7;display:grid;gap:5px}.rider-wallet-stat small{font-size:11px;color:#718379}.rider-wallet-stat b{font-size:20px;color:#1d4b3a}.rider-wallet-account p{margin:0;font-size:11px;line-height:1.5;color:#7c8c82}.rider-settlement-list{display:grid;gap:6px;margin-top:10px}.rider-settlement-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #edf3ee}.rider-settlement-row:last-child{border-bottom:0}.rider-settlement-row div{display:grid;gap:3px}.rider-settlement-row strong{font-size:13px;color:#254c3d}.rider-settlement-row small{font-size:11px;color:#84948a}.rider-settlement-row>b{color:#1d4b3a;font-size:14px}.payout-dialog{max-width:560px}
+.rider-wallet-panel{border-top:3px solid #d4b45f}.rider-wallet-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:2px}.rider-wallet-stat{padding:12px;border:1px solid #e3ece4;border-radius:10px;background:#f8fbf7;display:grid;gap:5px}.rider-wallet-stat small{font-size: 12px;color:#718379}.rider-wallet-stat b{font-size:20px;color:#1d4b3a}.rider-settlement-list{display:grid;gap:6px;margin-top:10px}.rider-settlement-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #edf3ee}.rider-settlement-row:last-child{border-bottom:0}.rider-settlement-row div{display:flex;align-items:center;gap:10px;min-width:0}.rider-settlement-row strong{font-size:13px;color:#254c3d}.rider-settlement-row span{font-size: 12px;color:#84948a}.rider-settlement-row>b{color:#1d4b3a;font-size:14px}.payout-dialog{max-width:560px}
 @media (max-width:640px){.rider-wallet-summary{grid-template-columns:1fr}.rider-settlement-row{align-items:flex-start}}

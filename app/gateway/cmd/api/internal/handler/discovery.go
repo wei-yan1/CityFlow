@@ -174,7 +174,7 @@ func PlaceDetail(s *svc.ServiceContext) http.HandlerFunc {
 			}
 			offset = value
 		}
-		reply, err := s.Discovery.PlaceDetail(r.Context(), &discoveryclient.PlaceRequest{
+		reply, err := s.Discovery.PlaceDetail(rpcContext(r), &discoveryclient.PlaceRequest{
 			Source: pathvar.Vars(r)["source"], Id: pathvar.Vars(r)["id"], Offset: int32(offset),
 		})
 		if err != nil {
@@ -325,6 +325,32 @@ func ListMerchants(s *svc.ServiceContext) http.HandlerFunc {
 		reply, err := s.Discovery.ListMerchants(rpcContext(r), &discoveryclient.ListQuery{
 			Status: r.URL.Query().Get("status"), Limit: limit, Offset: offset,
 		})
+		if err != nil {
+			writeDiscoveryError(w, err)
+			return
+		}
+		writeRawJSON(w, http.StatusOK, reply.GetBodyJson())
+	}
+}
+
+func ListHotMerchants(s *svc.ServiceContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if s.Discovery == nil {
+			httpkit.WriteError(w, http.StatusServiceUnavailable, "discovery service unavailable")
+			return
+		}
+		limit := 10
+		if raw := r.URL.Query().Get("limit"); raw != "" {
+			if value, err := strconv.Atoi(raw); err == nil {
+				limit = value
+			}
+		}
+		body, _ := json.Marshal(map[string]any{
+			"category": r.URL.Query().Get("category"),
+			"month":    r.URL.Query().Get("month"),
+			"limit":    limit,
+		})
+		reply, err := s.Discovery.ListHotMerchants(r.Context(), &discoveryclient.JsonBody{BodyJson: body})
 		if err != nil {
 			writeDiscoveryError(w, err)
 			return

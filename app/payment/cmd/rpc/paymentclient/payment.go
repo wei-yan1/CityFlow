@@ -34,10 +34,6 @@ type (
 		Settlements(ctx context.Context, in *ListQuery, opts ...grpc.CallOption) (*JsonReply, error)
 		GetPayoutAccount(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*JsonReply, error)
 		SavePayoutAccount(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
-		CouponsAvailable(ctx context.Context, in *ListQuery, opts ...grpc.CallOption) (*JsonReply, error)
-		CouponsMine(ctx context.Context, in *ListQuery, opts ...grpc.CallOption) (*JsonReply, error)
-		ClaimCoupon(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error)
-		CouponsForTask(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error)
 		TaskPaymentStateInternal(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error)
 		EnsureSettlementInternal(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
 		RefundForTaskInternal(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error)
@@ -102,26 +98,6 @@ func (m *defaultPayment) GetPayoutAccount(ctx context.Context, in *Empty, opts .
 func (m *defaultPayment) SavePayoutAccount(ctx context.Context, in *JsonBody, opts ...grpc.CallOption) (*JsonReply, error) {
 	client := pb.NewPaymentClient(m.cli.Conn())
 	return client.SavePayoutAccount(ctx, in, opts...)
-}
-
-func (m *defaultPayment) CouponsAvailable(ctx context.Context, in *ListQuery, opts ...grpc.CallOption) (*JsonReply, error) {
-	client := pb.NewPaymentClient(m.cli.Conn())
-	return client.CouponsAvailable(ctx, in, opts...)
-}
-
-func (m *defaultPayment) CouponsMine(ctx context.Context, in *ListQuery, opts ...grpc.CallOption) (*JsonReply, error) {
-	client := pb.NewPaymentClient(m.cli.Conn())
-	return client.CouponsMine(ctx, in, opts...)
-}
-
-func (m *defaultPayment) ClaimCoupon(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error) {
-	client := pb.NewPaymentClient(m.cli.Conn())
-	return client.ClaimCoupon(ctx, in, opts...)
-}
-
-func (m *defaultPayment) CouponsForTask(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error) {
-	client := pb.NewPaymentClient(m.cli.Conn())
-	return client.CouponsForTask(ctx, in, opts...)
 }
 
 func (m *defaultPayment) TaskPaymentStateInternal(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*JsonReply, error) {

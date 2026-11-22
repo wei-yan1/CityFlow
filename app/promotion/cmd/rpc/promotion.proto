@@ -1,0 +1,174 @@
+syntax = "proto3";
+
+package promotion;
+option go_package = "cityflow/app/promotion/cmd/rpc/pb";
+
+message Empty {}
+message HealthReply { bool ok = 1; string message = 2; }
+
+message Coupon {
+  string id = 1;
+  string code = 2;
+  string title = 3;
+  string subtitle = 4;
+  string description = 5;
+  string type = 6;
+  repeated string applicable_task_types = 7;
+  int64 value_fen = 8;
+  int32 discount_percent = 9;
+  int64 max_discount_fen = 10;
+  int64 min_spend_fen = 11;
+  int32 total_quantity = 12;
+  int32 claimed_count = 13;
+  int32 per_user_limit = 14;
+  string status = 15;
+  int32 remaining = 16;
+  int32 user_claim_count = 17;
+  string user_coupon_id = 18;
+  string user_coupon_status = 19;
+  int64 starts_at_ms = 20;
+  int64 ends_at_ms = 21;
+  int64 created_at_ms = 22;
+  int64 updated_at_ms = 23;
+}
+
+message UserCoupon {
+  Coupon coupon = 1;
+  string id = 2;
+  string coupon_id = 3;
+  string user_id = 4;
+  string status = 5;
+  string task_id = 6;
+  string payment_order_id = 7;
+  int32 claim_no = 8;
+  int64 discount_fen = 9;
+  int64 claimed_at_ms = 10;
+  int64 used_at_ms = 11;
+}
+
+message ListCouponsReq {
+  string user_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+message ListCouponsResp {
+  repeated Coupon coupons = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+message ListMineReq {
+  string user_id = 1;
+  string status = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+message ListMineResp {
+  repeated UserCoupon coupons = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+message ClaimCouponReq { string user_id = 1; string coupon_id = 2; }
+message ClaimCouponResp { UserCoupon coupon = 1; }
+message RedeemCodeReq { string user_id = 1; string code = 2; }
+message RedeemCodeResp { UserCoupon coupon = 1; }
+
+message RedeemCode {
+  string id = 1;
+  string coupon_id = 2;
+  string batch_no = 3;
+  string code = 4;
+  uint64 seq = 5;
+  int32 max_redeem = 6;
+  int32 used_count = 7;
+  string status = 8;
+  string created_by = 9;
+  string note = 10;
+  int64 starts_at_ms = 11;
+  int64 ends_at_ms = 12;
+  int64 created_at_ms = 13;
+  int64 updated_at_ms = 14;
+}
+
+message GenerateRedeemCodesReq {
+  string coupon_id = 1;
+  int32 count = 2;
+  int32 max_redeem = 3;
+  string batch_no = 4;
+  string created_by = 5;
+  string note = 6;
+  int64 starts_at_ms = 7;
+  int64 ends_at_ms = 8;
+}
+message GenerateRedeemCodesResp {
+  repeated RedeemCode codes = 1;
+  string batch_no = 2;
+}
+
+message ListRedeemCodesReq {
+  string coupon_id = 1;
+  string batch_no = 2;
+  string status = 3;
+  int32 limit = 4;
+  int32 offset = 5;
+}
+message ListRedeemCodesResp {
+  repeated RedeemCode codes = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message ExportRedeemCodesReq {
+  string coupon_id = 1;
+  string batch_no = 2;
+  string status = 3;
+}
+message ExportRedeemCodesResp {
+  repeated RedeemCode codes = 1;
+}
+
+message DisableRedeemCodeReq { string id = 1; }
+
+message QuoteTaskReq {
+  string user_id = 1;
+  string task_id = 2;
+  string user_coupon_id = 3;
+  int64 amount_fen = 4;
+  string task_type = 5;
+  bool lock = 6;
+}
+message Quote {
+  string user_coupon_id = 1;
+  string coupon_id = 2;
+  string coupon_title = 3;
+  int64 original_amount_fen = 4;
+  int64 discount_fen = 5;
+  int64 payable_amount_fen = 6;
+  string status = 7;
+}
+message QuoteTaskResp { Quote quote = 1; }
+
+message MarkUsedReq {
+  string user_coupon_id = 1;
+  string task_id = 2;
+  string payment_order_id = 3;
+  int64 discount_fen = 4;
+}
+message ReleaseCouponReq { string user_coupon_id = 1; string task_id = 2; }
+message EmptyReply {}
+
+service Promotion {
+  rpc Health(Empty) returns (HealthReply);
+  rpc ListAvailable(ListCouponsReq) returns (ListCouponsResp);
+  rpc ListMine(ListMineReq) returns (ListMineResp);
+  rpc Claim(ClaimCouponReq) returns (ClaimCouponResp);
+  rpc RedeemCode(RedeemCodeReq) returns (RedeemCodeResp);
+  rpc GenerateRedeemCodes(GenerateRedeemCodesReq) returns (GenerateRedeemCodesResp);
+  rpc ListRedeemCodes(ListRedeemCodesReq) returns (ListRedeemCodesResp);
+  rpc ExportRedeemCodes(ExportRedeemCodesReq) returns (ExportRedeemCodesResp);
+  rpc DisableRedeemCode(DisableRedeemCodeReq) returns (EmptyReply);
+  rpc Quote(QuoteTaskReq) returns (QuoteTaskResp);
+  rpc MarkUsed(MarkUsedReq) returns (EmptyReply);
+  rpc Release(ReleaseCouponReq) returns (EmptyReply);
+}
+
+

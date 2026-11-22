@@ -4,7 +4,8 @@ services:
     container_name: cityflow-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: CHANGE_ME_MYSQL_ROOT_PASSWORD
+      # 真实值放在 deploy/.env（已 gitignore），模板见 deploy/.env.example
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in deploy/.env}
     ports:
       - "127.0.0.1:${MYSQL_PORT:-3307}:3306"
     volumes:
@@ -36,7 +37,7 @@ services:
     environment:
       POSTGRES_DB: cityflow_map
       POSTGRES_USER: cityflow
-      POSTGRES_PASSWORD: CHANGE_ME_POSTGIS_PASSWORD
+      POSTGRES_PASSWORD: ${POSTGIS_PASSWORD:?set POSTGIS_PASSWORD in deploy/.env}
     ports:
       - "127.0.0.1:${POSTGIS_PORT:-5434}:5432"
     volumes:

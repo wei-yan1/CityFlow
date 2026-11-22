@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"cityflow/app/tracking/cmd/rpc/internal/svc"
-	"cityflow/internal/domain"
-	"cityflow/internal/domain/location"
+	"cityflow/internal/common/domain"
+	"cityflow/internal/common/location"
 	"cityflow/internal/platform/rpcctx"
 	"cityflow/internal/security"
 

@@ -1,5 +1,5 @@
 // Creates a simulated rider observation sequence in a disposable seeded server.
-// Real MySQL/Redis and external road matching are used when configured by that server.
+// Real MySQL/Redis/RabbitMQ and external road matching are used when configured by that server.
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path');
@@ -45,7 +45,7 @@ fs.mkdirSync(output, { recursive: true });
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(1000);
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
     await page.locator('.map-workspace').screenshot({ path: path.join(output, 'mobile.png') });
-    await page.locator('[data-history-clear]').click(); assert.equal(await page.locator('.map-history p').innerText(), '');
+    await page.locator('[data-history-clear]').click(); assert.equal(await page.locator('.map-history p').innerText(), '已清除地图上的轨迹显示；服务端记录仍保留，可重新查看。');
     assert.deepEqual(errors, []); console.log('PASS: recorded rider observations, task scope, terminal history, real bicycle matching, desktop/mobile display. Task retained for restart verification:', task.id, 'Screenshots:', output);
   } finally {
     if (task && !cancelled) await api(user, `/api/v1/tasks/${task.id}`, 'DELETE').catch(() => {});

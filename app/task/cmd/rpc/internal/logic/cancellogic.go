@@ -5,7 +5,7 @@ import (
 
 	"cityflow/app/task/cmd/rpc/internal/svc"
 	taskpb "cityflow/app/task/cmd/rpc/pb"
-	"cityflow/internal/domain/auth"
+	"cityflow/internal/common/auth"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"google.golang.org/grpc/codes"
@@ -37,7 +37,7 @@ func (l *CancelLogic) Cancel(in *taskpb.CancelRequest) (*taskpb.TaskReply, error
 	if _, err := l.svcCtx.Tasks.Get(l.ctx, in.GetId()); err != nil {
 		return nil, grpcTaskError(err)
 	}
-	item, err := l.svcCtx.Tasks.Cancel(l.ctx, in.GetId(), claims.Subject, claims.Role)
+	item, err := l.svcCtx.Tasks.Cancel(l.ctx, in.GetId(), claims.Subject, claims.Role, in.GetReason())
 	if err != nil {
 		return nil, grpcTaskError(err)
 	}

@@ -44,6 +44,12 @@ func main() {
 		defer stopRelay()
 	}
 
+	jobCtx, stopJobs := context.WithCancel(context.Background())
+	defer stopJobs()
+	if err := ctx.StartJobs(jobCtx); err != nil {
+		log.Fatalf("identity jobs: %v", err)
+	}
+
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
 		identity.RegisterIdentityServer(grpcServer, server.NewIdentityServer(ctx))
 
@@ -51,9 +57,7 @@ func main() {
 			reflection.Register(grpcServer)
 		}
 	})
-	s.AddUnaryInterceptors(authn.UnaryServerInterceptor(ctx.Secret, func(callCtx context.Context, subject, _ string) (bool, error) {
-		return ctx.Accounts.IsActive(callCtx, subject)
-	},
+	s.AddUnaryInterceptors(authn.UnaryServerInterceptor(ctx.Secret, ctx.AccountActive,
 		"/identity.Identity/Login",
 		"/identity.Identity/Refresh",
 		"/identity.Identity/Logout",

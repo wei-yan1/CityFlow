@@ -54,6 +54,10 @@ func main() {
 	}()
 	defer streamSrv.Close()
 
+	archiveCtx, archiveCancel := context.WithCancel(context.Background())
+	ctx.StartTrackArchive(archiveCtx)
+	defer archiveCancel()
+
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
 		pb.RegisterTrackingServer(grpcServer, server.NewTrackingServer(ctx))
 		if c.Mode == service.DevMode || c.Mode == service.TestMode {

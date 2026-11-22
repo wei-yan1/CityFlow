@@ -48,6 +48,10 @@ func main() {
 
 	eventCtx, stopEvents := context.WithCancel(context.Background())
 	ctx.StartEvents(eventCtx)
+	if err := ctx.StartJobs(eventCtx); err != nil {
+		stopEvents()
+		log.Fatalf("task job executor: %v", err)
+	}
 	defer stopEvents()
 
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {

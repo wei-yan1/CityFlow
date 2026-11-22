@@ -17,6 +17,7 @@ func ListPlaceComments(s *svc.ServiceContext) http.HandlerFunc {
 		limit := queryLimit(r)
 		reply, err := s.Discovery.ListPlaceComments(rpcContext(r), &discoveryclient.CommentListRequest{
 			ReviewId: pathvar.Vars(r)["id"], Cursor: r.URL.Query().Get("cursor"), Limit: limit,
+			Sort: r.URL.Query().Get("sort"),
 		})
 		if err != nil {
 			writeDiscoveryError(w, err)
@@ -75,6 +76,7 @@ func ListRiderComments(s *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		reply, err := s.Task.ListRiderComments(rpcContext(r), &taskclient.CommentListRequest{
 			FeedbackId: pathvar.Vars(r)["id"], Cursor: r.URL.Query().Get("cursor"), Limit: queryLimit(r),
+			Sort: r.URL.Query().Get("sort"),
 		})
 		if err != nil {
 			writeTaskError(w, err)

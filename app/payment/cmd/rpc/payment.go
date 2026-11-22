@@ -49,6 +49,12 @@ func main() {
 	ctx.Payments.StartNotifyBuffer()
 	defer ctx.Payments.StopNotifyBuffer()
 
+	jobCtx, stopJobs := context.WithCancel(context.Background())
+	defer stopJobs()
+	if err := ctx.StartJobs(jobCtx); err != nil {
+		log.Fatalf("payment jobs: %v", err)
+	}
+
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
 		pb.RegisterPaymentServer(grpcServer, server.NewPaymentServer(ctx))
 
@@ -66,6 +72,12 @@ func main() {
 	settlementWorkerEnabled := envEnabled("PAYMENT_SETTLEMENT_WORKER_ENABLED", true)
 	reconciliationWorkerEnabled := envEnabled("PAYMENT_RECONCILIATION_WORKER_ENABLED", true)
 	inboxRecoveryWorkerEnabled := envEnabled("PAYMENT_INBOX_RECOVERY_WORKER_ENABLED", true)
+	if ctx.XXLJob != nil {
+		if reconciliationWorkerEnabled {
+			log.Printf("payment reconciliation worker disabled: XXL-JOB owns payment.reconcile")
+		}
+		reconciliationWorkerEnabled = false
+	}
 	var workerWG sync.WaitGroup
 	if settlementWorkerEnabled {
 		workerWG.Add(1)

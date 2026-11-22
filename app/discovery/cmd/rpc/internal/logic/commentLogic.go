@@ -5,7 +5,7 @@ import (
 
 	"cityflow/app/discovery/cmd/rpc/internal/svc"
 	"cityflow/app/discovery/cmd/rpc/pb"
-	"cityflow/internal/domain/comment"
+	"cityflow/app/discovery/domain/comment"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -50,7 +50,7 @@ func NewListPlaceCommentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *ListPlaceCommentsLogic) ListPlaceComments(in *pb.CommentListRequest) (*pb.JsonReply, error) {
-	out, err := l.svcCtx.CommentSvc.ListTop(l.ctx, in.GetReviewId(), optionalUser(l.ctx), in.GetCursor(), int(in.GetLimit()))
+	out, err := l.svcCtx.CommentSvc.ListTop(l.ctx, in.GetReviewId(), optionalUser(l.ctx), in.GetSort(), in.GetCursor(), int(in.GetLimit()))
 	if err != nil {
 		return nil, grpcError(err)
 	}

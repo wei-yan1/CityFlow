@@ -1,5 +1,5 @@
 -- Anonymous is a property of one review row, never of the account.
--- user_id and order_id remain the authoritative internal identity/relationship.
+-- user_id and task_id remain the authoritative internal identity/relationship.
 SET @has_review_anonymous = (
     SELECT COUNT(*) FROM information_schema.COLUMNS
     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'place_reviews' AND COLUMN_NAME = 'anonymous'

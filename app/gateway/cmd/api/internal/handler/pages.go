@@ -10,17 +10,18 @@ import (
 )
 
 var staticPages = map[string]string{
-	"/":                "auth/login.html",
-	"/login":           "auth/login.html",
-	"/register":        "auth/login.html",
-	"/forgot-password": "auth/login.html",
-	"/user":            "user/index.html",
-	"/coupons":         "coupons/index.html",
-	"/coupons/mine":    "coupons/mine.html",
-	"/rider":           "rider/index.html",
-	"/rider/register":  "rider/register.html",
-	"/merchant":        "merchant/index.html",
-	"/admin":           "platform/index.html",
+	"/":                   "auth/login.html",
+	"/login":              "auth/login.html",
+	"/register":           "auth/login.html",
+	"/forgot-password":    "auth/login.html",
+	"/user":               "user/index.html",
+	"/coupons":            "user/coupons/index.html",
+	"/coupons/mine":       "user/coupons/mine.html",
+	"/rider":              "rider/index.html",
+	"/rider/register":     "rider/register.html",
+	"/merchant":           "merchant/index.html",
+	"/admin":              "platform/index.html",
+	"/admin/redeem-codes": "platform/redeem-codes.html",
 }
 
 // Pages is the edge's non-API fallback. The web tree is embedded in the
@@ -28,6 +29,8 @@ var staticPages = map[string]string{
 // API paths are explicitly rejected and are never proxied anywhere.
 func Pages(s *svc.ServiceContext) http.HandlerFunc {
 	assets := web.AssetsHandler()
+	shared := web.SharedAssetsHandler()
+	couponAssets := web.UserCouponsAssetsHandler()
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 		if path == "/api" || strings.HasPrefix(path, "/api/") {
@@ -39,11 +42,17 @@ func Pages(s *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 		switch {
-		case strings.HasPrefix(path, "/orders/") && strings.TrimPrefix(path, "/orders/") != "":
-			web.ServePage(w, "user/order.html")
+		case strings.HasPrefix(path, "/tasks/") && strings.TrimPrefix(path, "/tasks/") != "":
+			web.ServePage(w, "user/task.html")
 			return
 		case strings.HasPrefix(path, "/riders/") && strings.TrimPrefix(path, "/riders/") != "":
 			web.ServePage(w, "user/rider-profile.html")
+			return
+		case strings.HasPrefix(path, "/assets/shared/"):
+			shared.ServeHTTP(w, r)
+			return
+		case strings.HasPrefix(path, "/user/coupons/assets/"):
+			couponAssets.ServeHTTP(w, r)
 			return
 		case strings.HasPrefix(path, "/assets/"):
 			assets.ServeHTTP(w, r)

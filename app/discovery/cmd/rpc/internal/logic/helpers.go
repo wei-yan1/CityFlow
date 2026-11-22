@@ -9,9 +9,9 @@ import (
 	"io"
 
 	"cityflow/app/discovery/cmd/rpc/pb"
-	"cityflow/internal/application/repository"
-	"cityflow/internal/domain"
-	"cityflow/internal/domain/auth"
+	"cityflow/app/discovery/repository"
+	"cityflow/internal/common/auth"
+	"cityflow/internal/common/domain"
 	"cityflow/internal/platform/authctx"
 
 	"google.golang.org/grpc/codes"

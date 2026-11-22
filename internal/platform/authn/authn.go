@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"cityflow/internal/domain"
-	"cityflow/internal/domain/auth"
+	auth "cityflow/internal/common/auth"
+	"cityflow/internal/common/domain"
 	"cityflow/internal/security"
 )
 

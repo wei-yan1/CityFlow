@@ -6,7 +6,7 @@ package authctx
 import (
 	"context"
 
-	"cityflow/internal/domain/auth"
+	auth "cityflow/internal/common/auth"
 )
 
 type claimsKey struct{}

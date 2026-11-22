@@ -5,7 +5,7 @@ import (
 
 	"cityflow/app/payment/cmd/rpc/internal/svc"
 	"cityflow/app/payment/cmd/rpc/pb"
-	"cityflow/internal/domain/payment"
+	"cityflow/app/payment/domain/payment"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

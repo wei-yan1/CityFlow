@@ -73,26 +73,6 @@ func (s *PaymentServer) SavePayoutAccount(ctx context.Context, in *pb.JsonBody) 
 	return l.SavePayoutAccount(in)
 }
 
-func (s *PaymentServer) CouponsAvailable(ctx context.Context, in *pb.ListQuery) (*pb.JsonReply, error) {
-	l := logic.NewCouponsAvailableLogic(ctx, s.svcCtx)
-	return l.CouponsAvailable(in)
-}
-
-func (s *PaymentServer) CouponsMine(ctx context.Context, in *pb.ListQuery) (*pb.JsonReply, error) {
-	l := logic.NewCouponsMineLogic(ctx, s.svcCtx)
-	return l.CouponsMine(in)
-}
-
-func (s *PaymentServer) ClaimCoupon(ctx context.Context, in *pb.IdRequest) (*pb.JsonReply, error) {
-	l := logic.NewClaimCouponLogic(ctx, s.svcCtx)
-	return l.ClaimCoupon(in)
-}
-
-func (s *PaymentServer) CouponsForTask(ctx context.Context, in *pb.IdRequest) (*pb.JsonReply, error) {
-	l := logic.NewCouponsForTaskLogic(ctx, s.svcCtx)
-	return l.CouponsForTask(in)
-}
-
 func (s *PaymentServer) TaskPaymentStateInternal(ctx context.Context, in *pb.IdRequest) (*pb.JsonReply, error) {
 	l := logic.NewTaskPaymentStateInternalLogic(ctx, s.svcCtx)
 	return l.TaskPaymentStateInternal(in)

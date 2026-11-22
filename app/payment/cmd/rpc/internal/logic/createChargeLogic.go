@@ -3,9 +3,9 @@ package logic
 import (
 	"context"
 
+	paymentservice "cityflow/app/payment/application/payment"
 	"cityflow/app/payment/cmd/rpc/internal/svc"
 	"cityflow/app/payment/cmd/rpc/pb"
-	"cityflow/internal/application/service"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -38,7 +38,7 @@ func (l *CreateChargeLogic) CreateCharge(in *pb.IdBody) (*pb.JsonReply, error) {
 	if err := decodeBody(in.GetBodyJson(), &body); err != nil {
 		return nil, grpcError(err)
 	}
-	result, err := l.svcCtx.Payments.CreateCharge(l.ctx, service.CreateChargeInput{
+	result, err := l.svcCtx.Payments.CreateCharge(l.ctx, paymentservice.CreateChargeInput{
 		TaskID: in.GetId(), PayerID: payerID, Provider: body.Provider,
 		UserCouponID: body.UserCouponID, IdempotencyKey: body.IdempotencyKey,
 	})

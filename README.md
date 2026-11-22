@@ -1,188 +1,353 @@
 # CityFlow
 
-CityFlow 是一个 Go 编写的多任务即时服务调度平台基础版。当前包含用户、商家、骑手和平台角色，支持 JWT 登录、账号与角色资料 CRUD、任务创建/编辑/取消、骑手抢单和状态流转，以及高德/Leaflet 地图选点、地点搜索、骑行路线预览、骑手位置快照与按任务授权的 WebSocket 推送。
+> 面向校园与园区的即时任务调度平台。
 
-> 项目仍在开发阶段，表结构和业务逻辑允许大幅增删，不维护旧数据/旧接口兼容；数据所有权、隐私 DTO、事务边界、容量和验证门槛以代码和迁移为准。
+<p align="center">
+  <img src="docs/screenshots/01-hero.png" width="920" alt="CityFlow 任务详情真实运行界面">
+</p>
+<p align="center"><sub>真实运行：用户林知夏完成一笔代取奶茶任务，骑手周远累计完成 3 单、获得 1 条评价，支付与骑手结算均已到账。</sub></p>
 
-## 项目结构
+[![Go](https://img.shields.io/badge/Go-1.26.4-00ADD8?logo=go&logoColor=white)](https://go.dev/)
+[![go-zero](https://img.shields.io/badge/go--zero-1.7.3-0f766e)](https://github.com/zeromicro/go-zero)
+[![MySQL](https://img.shields.io/badge/MySQL-8.4.13-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![Redis](https://img.shields.io/badge/Redis-7.4.11-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![RabbitMQ](https://img.shields.io/badge/RabbitMQ-4.1.8-FF6600?logo=rabbitmq&logoColor=white)](https://www.rabbitmq.com/)
+
+## 目录
+
+- [一、先看它真的能跑](#一先看它真的能跑)
+- [二、这个项目解决什么问题](#二这个项目解决什么问题)
+- [三、30 秒看懂](#三30-秒看懂)
+- [四、做到什么程度](#四做到什么程度)
+- [五、技术亮点](#五技术亮点)
+- [六、整体架构](#六整体架构)
+- [七、一条核心链路](#七一条核心链路)
+- [八、实际运行](#八实际运行)
+- [九、快速开始](#九快速开始)
+- [十、工程难题](#十工程难题)
+- [十一、当前边界](#十一当前边界)
+- [十二、文档](#十二文档)
+
+## 一、先看它真的能跑
+
+| 能力 | 怎么操作 | 实际结果 | 证据 |
+|---|---|---|---|
+| 用户发布、支付、评价一条任务 | 用 `user@cityflow.local` 登录 `/user`，发布「金鸡岭校区代取奶茶」，支付后由骑手完成并评价 | 任务 `COMPLETED`，任务金额 ¥12.50；支付单 `PAID`，骑手结算单也是 `PAID`；骑手卡片显示 5.0 分、1 条评价、累计完成 3 单 | [任务详情截图](#八实际运行)；`GET /api/v1/tasks/d5a5d592-5856-42c2-aabf-9261240cb615/payment` 返回 `payment.status=PAID`、`settlement.status=PAID` |
+| 骑手查看开放池与收入 | 用 `rider@cityflow.local` 登录 `/rider`，查看首屏和任务列表 | 周远累计完成 3 单；附近可接任务 0 项，未支付任务不出现在开放池；已到账 ¥29.16，对应 3 笔已完成任务结算 | [骑手工作台截图](#八实际运行)；`GET /api/v1/riders/me` 返回 `completed_tasks:3` |
+| 平台按任务维度调度 | 用 `admin@cityflow.local` 登录 `/admin`，打开任务调度 | 7 条任务记录；发布用户显示「林知夏」「陈同学」，状态列只显示单个「已取消 / 已完成 / 待接单」 | [平台任务调度截图](#八实际运行) |
+| 地图搜索本地商家 | 用户端 `/user` 地图搜索「桂电金鸡岭校园便利店」 | 搜索结果第一条是本地商家，`source=merchant`、`coordinate_system=WGS84`，不再只返回高德 POI | `GET /api/v1/map/search?keywords=桂电金鸡岭校园便利店&city=桂林市`；数据库商家 `6d06980e-8621-47dc-aeef-ea1a274ddabf` |
+
+**一条完整用户链路**：林知夏从 `/user` 发布「金鸡岭校区代取奶茶」→ 支付 ¥12.50 → 周远接单、取件、送达 → 任务变为 `COMPLETED`，支付单和结算单变为 `PAID` → 用户给出 5 星评价，骑手卡片显示 1 条评价。截图见 [实际运行](#八实际运行)。
+
+## 二、这个项目解决什么问题
+
+CityFlow 是给校园和园区里的用户、兼职骑手、周边商家与平台运营共同使用的即时任务调度工具。它要解决的是“跑腿需求散落在群聊和私聊里，谁接、多少钱、到哪了、有没有付、出了问题找谁”这一串问题：口头约定的任务没有状态，骑手看不到可信的开放池，商家不知道自己还能接多少单，平台也无法回溯一笔任务的支付、位置和评价。
+
+它不是“再做一个外卖下单页”。和普通 CRUD 任务板的区别有两点：第一，任务、支付、位置、评价各自有独立的数据所有者，靠任务状态机和支付门禁保证“没付钱的任务不能被接”；第二，骑手位置先写 Redis 热状态，再按批归档到 MySQL，实时展示和历史追溯分开处理，不让高频位置写拖垮主库。
+
+## 三、30 秒看懂
+
+| 谁 | 从哪里进 | 能做什么 | 做完看到什么 |
+|---|---|---|---|
+| 用户 | `/user` | 发布取送/代购任务、支付、取消、领券、评价骑手和商家、查看任务地图 | 任务状态、支付金额、骑手信息、评价与历史轨迹 |
+| 骑手 | `/rider` | 上线、查看附近任务、接单、到达/取件/送达、收款账户、任务地图 | 当前任务、累计完成、评分、评价、待结算/已到账 |
+| 商家 | `/merchant` | 建店、编辑营业资料、设置每小时容量、维护门店位置和图片 | 营业状态、容量、用户评价入口 |
+| 平台 | `/admin` | 任务调度、账号/商家/骑手资料、骑手认证、异常与举报、评价审计、兑换码管理 | 任务台账、审核结果、异常处理结果、CSV 导出 |
+
+## 四、做到什么程度
+
+| 目标 | 判断标准 | 当前结果 | 证据 |
+|---|---|---|---|
+| 用户—支付—骑手—评价主链路跑通 | 一笔真实任务能从发布走到完成，支付和结算都能落状态 | 已达成 | 任务 `d5a5d592-5856-42c2-aabf-9261240cb615` 为 `COMPLETED`；支付单 `59165bf8-d142-4d45-90e2-7c0a4a8c9b1e` 为 `PAID`；结算单 `06f1b335-7a67-4074-92c4-8d5af5b1beed` 为 `PAID`；见任务详情截图 |
+| 支付与任务不被 taskId/orderId 混淆 | 任务支付只按任务报价；同一任务最多一笔活跃支付单；未支付任务不能接单 | 已达成 | `payment_orders.active_task_id` 生成列 + 唯一索引；Task Claim 走 `PaymentGate.EnsureClaimable`；`go test ./app/payment/... ./app/task/...` 通过 |
+| 位置流能订阅，轨迹能归档 | 进行中任务可建立 WSS；已完成/已取消任务拒绝；位置最终写入 `rider_track_points` | 部分达成 | 临时 `CLAIMED` 任务 WSS 握手返回 `Open`（101）；`COMPLETED` 任务返回 404；模拟上报 1 个位置后，`rider_track_points` 出现 1 条记录。多 Gateway 实例的实时广播尚未做桥接 |
+| 评价与骑手统计同源 | 商家评价只能落到真实商家；骑手完成数和评价数来自任务/反馈事实 | 已达成 | `/api/v1/tasks/d5a5.../merchant-review-target` 返回 400「该任务没有可评价的商家地点」；`/api/v1/riders/me` 返回 `completed_tasks:3`；`/api/v1/tasks/6a946.../rider` 返回 `completed_tasks:3, review_count:1` |
+| 干净环境能启动并自检 | 从空依赖启动基础设施、建库、起服务、`/readyz` 通过 | 部分达成 | 已用 `start-local.ps1` 重建并启动 9 个进程；`/readyz` 返回 `{"status":"ok"}`。本轮没有清空 Docker 数据卷做一次全新的空库重放 |
+
+## 五、技术亮点
+
+### 技术栈总览
+
+| 层 | 技术 | 版本 | 在项目里做什么 | 边界 |
+|---|---|---|---|---|
+| 语言 / 框架 | Go + go-zero | Go 1.26.4；go-zero 1.7.3 | 9 个独立进程；Gateway 提供 REST/WSS，业务服务用 zRPC；HTTP 契约在 `gateway.api`，RPC 契约在各自 `.proto` | go-zero 负责路由、服务发现配置和 RPC 骨架，不替业务做跨库事务或事件一致性 |
+| 持久化 | MySQL + GORM | MySQL 8.4.13；GORM 1.25.12 | 每个服务一个库：身份、任务、商家、支付、优惠、通知、轨迹；任务与支付靠本地事务、唯一约束保证不变量 | 服务之间不共享表、不跨库做外键或分布式事务 |
+| 热状态 | Redis + go-redis | Redis 7.4.11；go-redis 9.7.0 | 骑手位置快照/GEO/待归档 ZSET；点赞集合与计数 ZSET；登录与限流辅助状态 | Redis 里的实时位置可以丢，历史轨迹以 MySQL 归档为准；点赞状态清空后不能假装全量可恢复 |
+| 消息 | RabbitMQ | 4.1.8 | Task/Payment 的 Outbox 投递；任务事件通知；轨迹批量归档；点赞绝对计数投影 | 至少一次投递，消费端必须用 inbox/唯一键做幂等，不能把 MQ 当唯一数据源 |
+| 前端 | 原生 JavaScript + 高德 JS API 2.0 / Leaflet 1.9.4 | 高德 JS API 2.0；Leaflet 1.9.4 | Gateway 直接托管单页应用；地图、任务表单、角色工作台都在浏览器里运行，没有前端构建步骤 | 不是四个独立前端应用，也没有 SSR；Node 只用于语法检查，不是运行时依赖 |
+| 实时 / RPC | gorilla/websocket + gRPC | gorilla/websocket 1.5.3；gRPC 1.65.0 | 任务位置流用 WebSocket 子协议携带 JWT；服务间同步查询/命令走 gRPC | 当前实时事件总线是单 Gateway 进程内广播，多实例需要额外桥接 |
+| 部署 / 任务 | Docker Compose + PowerShell 7 + 可选 XXL-JOB | Docker Compose v2；PowerShell 7.6.4；XXL-JOB 可选 | 本地拉起 MySQL/Redis/RabbitMQ/PostGIS；`start-local.ps1` 负责建库、构建、起进程和健康检查；Payment 可接 XXL-JOB 调度对账 | 面向本地开发；不是生产级编排、监控和自动扩缩容方案 |
+
+**核心链路**：Go + go-zero + MySQL + RabbitMQ。  
+**支撑设施**：Redis 热状态、高德/Leaflet 地图、原生前端、PowerShell/Docker Compose。  
+**仅演示 / 未接入运行路径**：支付默认走 `MOCK` 渠道，支付宝/微信适配器需要真实商户凭证和公网 HTTPS 回调；PostGIS 容器仍启动，但当前地图搜索走 AMap；XXL-JOB 是可选调度，不是本地默认启动项。
+
+### 亮点一：支付按 task 建单，靠唯一活跃单和接单门禁守住一致性
+
+**业务问题**：旧链路把任务 ID 直接当订单 ID 去查优惠券，支付成功后又调用 `Order.MarkPaid`，结果一边是优惠券 404，一边是“支付成功但订单没回写”。如果继续让客户端传金额、或者允许同一任务重复建支付单，后面退款、对账和结算都会对不上。
+
+**设计选择**：Payment 以 `payment_orders` 为唯一支付事实，订单直接保存 `task_id`，金额只从 Task 的任务报价读取；`active_task_id` 是生成列，只为 `PENDING/PAID/REFUND_PENDING` 生成值，并加唯一索引，保证“一任务一活跃支付单”。Task 接单前通过 `PaymentGate.EnsureClaimable` 回查付款状态；任务完成后再由结算 worker 建结算单，而不是在支付回调里直接改任务状态。
+
+**证据**：
+- 入口：`app/gateway/cmd/api/internal/handler/payments.go`、`app/gateway/cmd/api/internal/handler/tasks.go`
+- 关键实现：`app/payment/application/payment/payment_service.go`、`internal/migrations/service/payment_001_payment.sql`
+- 验证：`GET /api/v1/tasks/d5a5.../payment` 返回支付 `PAID`、结算 `PAID`；`go test ./app/payment/... ./app/task/...`
+
+### 亮点二：位置先写 Redis 热状态，再按批归档 MySQL
+
+**业务问题**：骑手大约每 10 秒上报一次位置。如果每次都同步写 MySQL，任务地图、开放池和历史轨迹会被同一张表的高频写拖慢；但只写 Redis 又会在进程重启或缓存淘汰后丢掉可追溯的履约证据。
+
+**设计选择**：上报先走 Redis Lua，一次性更新位置快照、GEO 索引、已见集合和待归档 ZSET；`TrackArchiver` 每 5 秒取一批待归档位置，发布 `rider.track.batch.v1`，消费者写 `rider_track_points` 后再从 ZSET 移除。MySQL 侧用 `(rider_id, version)` 唯一键兜住重复投递，启动时还会扫描旧格式的 `track:rider:*` 回填。
+
+**证据**：
+- 入口：`app/gateway/cmd/api/internal/handler/tracking.go`
+- 关键实现：`app/tracking/application/tracking/tracking_service.go`、`app/tracking/cmd/rpc/internal/svc/track_archive.go`、`app/tracking/cmd/rpc/internal/stream/stream.go`
+- 验证：用骑手令牌上报一次 `simulated` 位置后，`cityflow_tracking.rider_track_points` 出现 1 条记录，`rider_id=...0003`；进行中任务 WSS 返回 101，已完成任务返回 404
+
+### 亮点三：评价目标只认真实商家，骑手统计回到任务事实
+
+**业务问题**：地图 POI 曾被直接当成商家，用户在已完成任务里写“商家评价”，结果写进了平台评价审计，商家端却看不到；骑手的 `completed_tasks` 又依赖一个没人维护的旧列，完成 3 单仍显示 0 单，任务卡上的评价数也和评价区对不上。
+
+**设计选择**：`merchant-review-target` 只通过 `FindMerchantByAMapPOI` 解析真实收录商家，查不到就返回“该任务没有可评价的商家地点”；POI 详情和商家详情在页面上分开，纯 POI 不再展示商家评价表单。骑手累计完成数改为按 `tasks.status='COMPLETED'` 聚合覆盖，任务骑手卡的 `review_count` 从反馈事实计算，不再相信旧投影列。
+
+**证据**：
+- 入口：`app/gateway/cmd/api/internal/handler/discovery.go`（商家评价）、`app/gateway/cmd/api/internal/handler/rider_ops.go`（任务骑手卡）
+- 关键实现：`app/discovery/application/review/merchant_reviews.go`、`app/task/internal/adapter/mysql/rider_repository.go`
+- 验证：`POST /api/v1/tasks/d5a5.../merchant-review-target` 返回 400；`GET /api/v1/riders/me` 返回 `completed_tasks:3`；`GET /api/v1/tasks/6a946.../rider` 返回 `completed_tasks:3, review_count:1`；任务详情截图显示 5 星与“送得很快，沟通清楚。”
+
+### 亮点四：本地事务写 Outbox，消费者用 inbox 和唯一键做幂等
+
+**业务问题**：任务完成、取消、支付回调、结算之间如果直接双写数据库和 MQ，进程在写完数据库、还没发消息时崩掉，就会出现“任务完成了但通知没发、结算没建”；消息重复投递又会造成重复结算或重复退款。
+
+**设计选择**：Task 在任务状态变更的同一个 MySQL 事务里写 `task_outbox`，由 relay 投递到 RabbitMQ；Payment 用 `payment_inbox` 记录已消费事件 ID，重复消息直接跳过。支付单、结算单各自有唯一键和状态 CAS；结算 worker 用 `FOR UPDATE SKIP LOCKED` 加租约取单，失败按重试次数推进，可能已出款时再用 `QueryPayout` 决定 `PAID/FAILED/UNKNOWN`。
+
+**证据**：
+- 入口：`app/gateway/cmd/api/internal/handler/tasks.go`、`app/gateway/cmd/api/internal/handler/payments.go`
+- 关键实现：`app/task/internal/adapter/mysql/outbox.go`、`app/payment/application/payment/payment_inbox.go`、`app/payment/application/payment/payment_settlement.go`
+- 验证：真实任务 `d5a5...` 的结算单在任务完成后变为 `PAID`；`go test ./app/task/... ./app/payment/...` 覆盖重复回调、结算重试和取消退款分支
+
+## 六、整体架构
+
+```mermaid
+flowchart LR
+    Browser[浏览器 / 移动端页面] --> G[Gateway :8087<br/>REST + WSS + 静态页面]
+    G --> I[Identity :8090]
+    G --> T[Task :8091]
+    G --> D[Discovery :8092]
+    G --> P[Payment :8094]
+    G --> PR[Promotion :8098]
+    G --> TR[Tracking WSS :8093]
+    G --> N[Notification :8099]
+    G --> R[Reaction :8097]
+    T <--> MQ[(RabbitMQ)]
+    P <--> MQ
+    D <--> MQ
+    N <--> MQ
+    R <--> MQ
+    TR --> Redis[(Redis<br/>位置 / GEO / 点赞)]
+    R --> Redis
+    I --> DB[(MySQL 8.4<br/>每服务独立库)]
+    T --> DB
+    D --> DB
+    P --> DB
+    PR --> DB
+    N --> DB
+    TR --> DB
+```
+
+| 层 | 职责 | 关键模块 | 不负责什么 |
+|---|---|---|---|
+| 入口层 | 鉴权、路由、限流、静态页面、WSS 代理 | `app/gateway` | 不拥有任务/支付状态；不替下游做业务校验 |
+| 业务层 | 账号、任务状态机、商家与地图、支付/结算、优惠券、通知、位置、点赞 | `identity`、`task`、`discovery`、`payment`、`promotion`、`tracking`、`notification`、`reaction` | 不读别的服务的表，不 import 别的服务的 domain |
+| 异步 / 任务层 | Outbox 投递、inbox 去重、轨迹归档、点赞投影、结算重试 | Task outbox relay、Payment settlement worker、Tracking TrackArchiver、Reaction projector | 不是唯一数据源；消息丢失必须能从业务表/待归档队列恢复 |
+| 数据层 | 持久化、热状态、消息 | MySQL、Redis、RabbitMQ | 不反向调用业务接口，不承担业务规则 |
+
+完整服务清单和数据所有权见 [`docs/architecture/microservices.md`](docs/architecture/microservices.md)。
+
+## 七、一条核心链路
+
+以「用户发布一笔代取奶茶并完成评价」为例：
+
+| 阶段 | 发生什么（含写入） | 谁负责 | 失败会怎样 | 证据 |
+|---|---|---|---|---|
+| 1. 入口 | 用户登录 `/user`，填写取件点、送达点、金额和联系人，`POST /api/v1/tasks` | Gateway | 未登录返回 401；请求体非法返回 400 | `gateway.api` 的 `post /api/v1/tasks` |
+| 2. 校验 | 校验任务归属、取送地点、金额、联系人；任务 ID 和幂等键由服务端生成/校验 | Task application | 地点无效或金额非法时拒绝，不写任务；重复幂等键返回已有任务 | `app/task/application/task/task_service.go` |
+| 3. 业务处理 | Task 建 `OPEN` 任务；用户创建支付单，Payment 读取任务报价；支付回调把支付单推进到 `PAID`；骑手接单前 Payment 回查可接单状态 | Task + Payment | 未支付时骑手接单返回 409；Payment 暂时不可用时开放池按可见性 fail-open，但接单仍强校验 | `app/task/application/task/task_service.go`、`app/payment/application/payment/payment_service.go` |
+| 4. 持久化 | Task 写 `tasks`、`task_events`、`task_outbox`；Payment 写 `payment_orders`、`payment_notifies`、`rider_settlements` | 各服务 repository | 事务失败回滚；活跃支付单冲突由唯一索引兜住；重复回调由 inbox/CAS 拒绝 | `payment_001_payment.sql`、`app/task/internal/adapter/mysql/outbox.go` |
+| 5. 异步 / 回调 | `task.created/completed/cancelled` 经 Outbox 进 RabbitMQ；Notification 写站内信；Payment 建结算单并重试出款 | Outbox relay、Payment worker、Notification consumer | 消息至少一次；消费端按事件 ID 去重；结算失败保留 `PENDING/FAILED/UNKNOWN` 并重试 | `app/payment/application/payment/payment_settlement.go` |
+| 6. 结果 | 任务详情显示 `COMPLETED`、支付 `PAID`、结算 `PAID`；用户评价骑手后，骑手卡片显示 1 条评价、累计 3 单 | Gateway 页面 + Task/Payment API | 最终一致前页面显示“待结算/处理中”，不假装已到账 | [任务详情截图](#八实际运行) |
 
 ```text
-CityFlow/
-├─ app/                      按官方 goctl 结构组织的 go-zero 服务
-│  ├─ gateway/cmd/api/       公开 REST API Gateway（8087），含 gateway.api 和页面/静态资源 handler
-│  ├─ identity/cmd/rpc/      账号/JWT/刷新会话 zRPC（8090），含 identity.proto
-│  ├─ task/cmd/rpc/          任务履约闭环 zRPC（8091），含 task.proto
-│  ├─ discovery/cmd/rpc/     商家/地点/地图/评价 zRPC（8092）
-│  ├─ tracking/cmd/rpc/      位置快照/GEO/轨迹/WSS zRPC（8095，WSS 8093）
-│  └─ payment/cmd/rpc/       支付/退款/结算/优惠券 zRPC（8094），含对账 worker
-├─ configs/                  环境变量示例
-├─ deploy/                   Docker Compose 等本地基础设施
-├─ internal/
-│  ├─ application/           用例服务与仓储接口
-│  ├─ domain/                用户、任务、位置等领域模型
-│  ├─ infrastructure/        内存、MySQL、缓存和事件适配器
-│  ├─ platform/              认证上下文、gRPC 元数据与通用 HTTP 约定
-│  └─ migrations/service/    服务自有 schema 的版本化迁移
-├─ scripts/                  开发检查脚本和微服务启停脚本
-│  └─ db/                    服务库/账号初始化脚本
-├─ web/                      由 Gateway 内嵌提供的页面与静态资源
-│  ├─ auth/                  登录页面
-│  ├─ user/                  用户端页面
-│  ├─ rider/                 骑手端页面
-│  ├─ merchant/              商家端页面
-│  ├─ platform/              平台端页面
-│  └─ assets/                按角色划分脚本与共享资源
-├─ go.mod
-└─ README.md
+登录 /user
+  → POST /api/v1/tasks
+  → Task 校验并写 tasks + task_events + task_outbox
+  → POST /api/v1/tasks/{id}/payment
+  → Payment 按任务报价建唯一活跃支付单
+  → 支付回调 / Mock 支付 → payment_orders = PAID
+  → 骑手接单（Payment.EnsureClaimable 通过）
+  → 取件 / 送达 → Task = COMPLETED
+  → Outbox → Notification / Payment settlement
+  → 用户评价 → rider_feedback + 骑手统计
 ```
 
-Go 业务代码按“领域 + 技术职责”分布在 `internal/`：应用服务、仓储接口、领域模型和基础设施实现分别归类；`web/` 由 Gateway 的页面 handler 通过 `go:embed` 直接提供，不再有独立页面进程。`app/` 下每个服务采用 goctl 生成的官方目录形态：API 服务有 `gateway.go`、`etc/gateway-api.yaml`、`internal/{config,handler,logic,svc,types}` 和 `.api` 契约；RPC 服务有 `<service>.go`、`etc/<service>.yaml`、`.proto`、pb/client、`internal/{config,logic,server,svc}`。
+## 八、实际运行
 
-## 快速启动
+### 用户：完成一笔代取任务后，支付和结算都能对上
 
-需要 Go 1.26 或兼容版本。程序启动时会读取 `.env` 中的本地 MySQL、Redis 和 JWT 配置；参考 `configs/local.env.example` 创建该文件，实际密钥不要提交。显式设置的环境变量优先，包括显式空值。默认运行方式是 Gateway + 五个领域微服务，不再启动独立页面进程。
+![用户任务详情](docs/screenshots/01-hero.png)
 
-使用 Docker 基础设施时，一次启动全部依赖：
+*真实运行：林知夏从 `/user` 发布「金鸡岭校区代取奶茶」，支付 ¥12.50；周远完成后，任务显示 `已完成`，骑手卡片显示 5.0 分、1 条评价、累计完成 3 单；支付与结算状态均为已支付。*
+
+### 骑手：累计完成 3 单，开放池不再混入未支付任务
+
+<p align="center"><img src="docs/screenshots/02-rider-workspace.png" width="760" alt="骑手工作台"></p>
+
+*真实运行：周远登录 `/rider`，首屏显示累计完成 3 单、当前任务 0 项、附近可接任务 0 项；未支付的「寄送文件到桂林北站」没有进入开放池；收入与结算显示已到账 ¥29.16，对应 3 笔任务结算。*
+
+### 用户工作台：发布任务和我的任务在同一页
+
+![用户工作台](docs/screenshots/03-user-workspace.png)
+
+*真实运行：林知夏在 `/user` 左侧填写取件点/送达点/金额，右侧「我的任务」列出 6 条记录，能看到已取消、已完成状态和每笔任务的金额、地点、发布时间。*
+
+### 平台：任务调度显示发布人姓名和单一状态
+
+![平台任务调度](docs/screenshots/04-platform-tasks.png)
+
+*真实运行：平台管理员打开 `/admin` 的任务调度，7 条任务按时间列出；发布用户列显示「林知夏」「陈同学」而不是 UUID，状态列只显示一个状态标签，不再出现“已取消 · 等待接单”。*
+
+## 九、快速开始
+
+### 运行
+
+**前置条件**：Go 1.26+（实测 1.26.4）、Docker Desktop、PowerShell 7、MySQL 客户端；Node 仅用于前端语法检查，不参与运行。
 
 ```powershell
+# 1. 准备本地配置（两个文件都已被 .gitignore 忽略）
+Copy-Item configs/local.env.example .env
+Copy-Item deploy/.env.example deploy/.env
+# 按本机情况填写 .env 与 deploy/.env 中的数据库、Redis、RabbitMQ、JWT 配置
+
+# 2. 启动基础设施
 docker compose -f deploy/docker-compose.yml up -d
-```
 
-Compose 会启动 MySQL、Redis、PostGIS、RabbitMQ。默认只绑定本机端口：MySQL `3307`、Redis `6380`、PostGIS `5434`、RabbitMQ `5673`，管理端 `15673`；这样不会和宿主机的 MySQL80（3306）、Memurai（6379）及 Windows RabbitMQ（5672）抢端口。
-
-然后一键构建并启动 Gateway、Identity、Task、Discovery、Payment、Tracking 和 Reaction。Gateway 直接提供网页和静态资源：
-
-```powershell
+# 3. 建库、构建并启动 9 个进程
 .\scripts\microservices\start-local.ps1 -Build -SkipDocker
+
+# 4. 打开
+# http://localhost:8087/login
 ```
 
-需要横向扩 Payment 的 MQ 消费和结算出款能力时，用 `-PaymentInstances` 启动多个 Payment 进程。它们共享同一个 `payment.task-events` 队列、Payment 数据库和结算行租约；第一个实例使用 `8094`，额外实例从 `8096` 开始分配端口；Gateway 和 Task 会收到全部 Payment endpoints。每个实例都运行顺序 MQ consumer 和数据库领取型结算 worker；只有第一个实例运行待支付/退款对账及漏结算扫描：
+`start-local.ps1` 会调用 `scripts/db/init-service-databases.ps1` 创建 7 个服务库和账号，按依赖顺序启动服务，最后等待 Gateway 的 `/readyz`。如果 Docker 基础设施已经在运行，可以保留 `-SkipDocker`。
 
-```powershell
-.\scripts\microservices\start-local.ps1 -SkipDocker -PaymentInstances 2
-```
+演示账号密码统一为 `cityflow123`：
 
-`PaymentInstances` 取值 1 到 8。结算 worker 通过 `FOR UPDATE SKIP LOCKED` 和两分钟租约领取互不重叠的批次；每实例仍顺序处理自己领取的结算单。对账扫描暂由首实例单独执行，首实例停机时该扫描会暂停，其他 Payment 实例仍可消费消息及执行结算。多实例前先确认数据库连接池和支付渠道限流能承受相应并发；consumer 的 prefetch 为 `2`，限制每个 consumer 的未确认消息数，不代表单实例有两个并行 handler。
+| 账号 | 角色 |
+|---|---|
+| `user@cityflow.local` | 用户（林知夏） |
+| `merchant@cityflow.local` | 商家（桂电金鸡岭校园便利店） |
+| `rider@cityflow.local` | 骑手（周远） |
+| `admin@cityflow.local` | 平台管理员 |
 
-MQ 可靠性已加入 Publisher Confirm、Payment Inbox 崩溃恢复、队列健康和清理。快速检查：
-
-```powershell
-.\scripts\mq\mq-status.ps1
-.\scripts\mq\e2e-payment.ps1 -Count 1000 -RealSettlements -Cleanup
-```
-
-`mq-status.ps1` 输出 ready/unacked/consumers/最老消息年龄估算和 DLQ；`e2e-payment.ps1` 会发真实 `task.completed.v1`、等待 `payment_inbox` 全部 `PROCESSED`，再检查队列是否清空。
-
-启动脚本创建五个有持久表的服务库及账号，各领域服务仅应用自己的 `internal/migrations/service/` 迁移；Tracking 不使用 MySQL，位置和骑手轨迹只在 Redis。默认启动包含七个 go-zero 进程，不复制旧库数据，`8089` 不监听。Identity 默认创建演示账号（可通过 `CITYFLOW_SEED_DEMO=false` 关闭）。Payment 在自己的进程中执行支付对账和骑手结算，并通过 Task RPC 查询已完成任务。Reaction 以 Redis 处理点赞/收藏热路径，Stream 批量落 `reaction_records`。支付环境变量示例见 [`configs/local.env.example`](configs/local.env.example)。
-
-国内地图配置见 [`configs/map.local.example.json`](configs/map.local.example.json)：复制为 `configs/map.local.json`，填入高德 Web端 JS API Key、安全码及 Web服务 Key，重启即可启用。未配置时使用 Leaflet/OSM。Discovery 当前运行路径只装配高德在线 provider；`maps.Local`/`maps.Hybrid` 与 PostGIS 桂林图层代码保留，但 local/hybrid 尚未接入，配置值不会改变实际 provider。
-
-服务地址：<http://localhost:8087>。页面入口为 `/login`、`/rider/register`、`/user`、`/rider`、`/merchant` 和 `/admin`。
-
-## 微服务运行模式（官方 go-zero 结构）
-
-当前默认运行方式是 Gateway（REST）+ Identity / Task / Discovery / Payment / Tracking / Reaction（zRPC）七个独立 go-zero 进程。页面、`/assets`、`/uploads` 由 Gateway 内嵌的 `web/` 资源直接提供；Gateway 的 `/api` 未匹配路由直接 404，不存在旧接口回退，也不再有 `8089` 进程。浏览器只访问 `8087`：
-
-| 进程 | 端口 | 契约/职责 |
-|---|---|---|
-| Gateway | `8087` | `gateway.api`；公开 REST 入口、本地验签 + 短 TTL 状态缓存、request ID/访问日志/限流/统一错误、登录/刷新 Cookie、任务/商家/支付/位置路由、显式 WSS 代理；启动前必须等五个 zRPC 健康 |
-| Identity | `8090` | `identity.proto`；zRPC 登录、刷新、退出、`Me`、`Verify`、注册、找回密码、用户资料、平台用户管理、骑手注册审核 |
-| Task | `8091` | `task.proto`；zRPC 任务列表、创建、抢单、状态推进、任务详情、骑手履约资料、骑手评价/打赏举报、骑手评论/回复 |
-| Discovery | `8092` | `discovery.proto`；商家自助 CRUD/媒体、平台商家、地图搜索/附近/路线/行政区、地点详情、地点与任务商家评价、地点评论/回复 |
-| Payment | `8094` | `payment.proto`；支付单、Mock/Sync/Refund/Notify、骑手结算、提现账户、优惠券与领取 |
-| Tracking | `8095` / `8093` | `tracking.proto`；骑手位置上报/快照/历史/附近查询；`8093` 为只监听本机的 WSS 流，Gateway 代理 `/api/v1/tasks/{id}/location/stream` |
-| Reaction | `8097` | `reaction.proto`；点赞/收藏热路径、状态查询、我的收藏；Redis + Stream 批量落 `reaction_records`，投影消息通知属主服务 |
-
-目录采用 goctl 官方单服务结构，并按主流单仓库多服务方式放在 `app/<service>/cmd/api` 或 `cmd/rpc` 下。API 服务根入口是 `gateway.go`，RPC 服务根入口是 `identity.go` / `task.go` / `discovery.go` / `payment.go` / `tracking.go` / `reaction.go`，不再使用手写的 `services/<name>/main.go`。`gateway.api`、`identity.proto`、`task.proto`、`discovery.proto`、`payment.proto`、`tracking.proto`、`reaction.proto` 分别是各服务的契约来源。
-
-一键启动（会先拉起 Docker 依赖、构建并启动全部 go-zero 进程）：
-
-```powershell
-.\scripts\microservices\start-local.ps1 -Build
-```
-
-依赖已在运行时可以跳过 Compose，只重启本地进程：
-
-```powershell
-.\scripts\microservices\start-local.ps1 -SkipDocker
-```
-
-启动顺序是硬约束：脚本先等待 Identity/Task/Discovery/Payment/Tracking/Reaction 的 gRPC 端口和 Tracking WSS 端口全部监听，再启动 Gateway；Gateway 在绑定 `8087` 前还会对 Identity/Task/Discovery/Payment/Tracking 五个核心服务执行健康 RPC 预检，任一核心服务不可用就直接退出。Reaction 不可用只降级点赞展示，不阻断评价读取。
-
-停止本地服务但保留 Docker 基础设施：
+停止本地进程但保留 Docker：
 
 ```powershell
 .\scripts\microservices\stop-local.ps1
 ```
 
-Gateway 的 `GET /readyz` 会通过 gRPC 健康检查同时检查 Identity、Task、Discovery、Payment 和 Tracking。服务间使用静态 endpoints 直连，不依赖 etcd；各 zRPC 服务端会再次校验 Bearer token 和账号状态，不把“经过 Gateway”当作授权。Tracking 的 WSS 握手从 `Sec-WebSocket-Protocol: bearer.<token>` 读取令牌，并在订阅前通过 Task 校验任务可见性。
-
-Gateway 的保护路由本地验签，并在 5 秒 TTL 的进程内缓存中查询账号 active 状态；缓存 miss 才调用 Identity `Verify`，不会让 Identity 成为每个请求的串行依赖。登录/刷新/退出由 Gateway 设置 HttpOnly 刷新 Cookie。REST 使用 `RequestTimeoutSeconds`（默认 15 秒）和 1 MiB 请求体上限，WSS 路由单独注册、不套短超时；request ID、访问日志、限流和统一错误映射都在边缘层完成。`GET /api/v1/tasks/{id}/location/stream` 已经实测经 Gateway 返回 `101` 并正常心跳。
-
-### 数据库与账号
-
-同一个 MySQL 实例内已经按服务拆库，不要求先部署五台数据库服务器：
-
-| 数据库 | 账号 | 当前用途 |
-|---|---|---|
-| `cityflow_identity` | `identity_dev` | `users`、`password_reset_tokens`、`rider_registrations` |
-| `cityflow_task` | `task_dev` | `tasks`、`task_events`、`task_incidents`、`rider_profiles`、`rider_feedback` |
-| `cityflow_discovery` | `discovery_dev` | `merchant_profiles`、`merchant_media`、`place_reviews`、`place_review_comments`、`trusted_places` |
-| `cityflow_reaction` | `reaction_dev` | `reaction_records` |
-| `cityflow_payment` | `payment_dev` | `payment_orders`、`rider_settlements`、`payment_notifies`、`rider_payout_accounts`、`coupons`、`coupon_claims` |
-
-`identity_dev` 不能访问 `cityflow_task`，`task_dev` 不能访问 `cityflow_identity`；Task 的 `rider_profiles`、`rider_feedback` 由 Task 自建并独占写入。Payment、Discovery 也各自拥有表结构和写事务；Task 不再直接写支付单、可信地点或轨迹表。Tracking 不再保存原始位置；位置和骑手轨迹只写 Redis。每个服务只应用 `internal/migrations/service/` 下自己的迁移；`scripts/db/` 只负责创建服务库和账号，不再创建兼容视图或复制旧数据。
-
-演示密码统一为 `cityflow123`：
-
-| 角色 | 邮箱 |
-|---|---|
-| 用户 | `user@cityflow.local` |
-| 商家 | `merchant@cityflow.local` |
-| 骑手 | `rider@cityflow.local` |
-| 管理员 | `admin@cityflow.local` |
-
-## 支付链路（默认 MOCK，可直接演示）
-
-带 `quoted_amount_fen` 的任务必须先付款才能被骑手接单。默认 `CITYFLOW_PAYMENT_PROVIDER=MOCK`，不需要任何支付宝/微信凭证：
-
-1. 用户 `POST /api/v1/tasks/{id}/payment` → 返回二维码内容与支付单；
-2. 用户 `POST /api/v1/payments/{id}/mock-pay` → 订单变 `PAID`；
-3. 骑手接单并推进到 `COMPLETED` → Payment 自动创建结算单；
-4. 骑手 `GET /api/v1/riders/me/settlements` 查看结算单。当前服务只创建 `PENDING` 结算，不自动向渠道打款；真实渠道的出款 worker 仍需单独接入。
-
-真实渠道：在 `.env` 填 `ALIPAY_*` 或 `WECHAT_PAY_*`，把 `CITYFLOW_PAYMENT_NOTIFY_BASE_URL` 指向公网 HTTPS，渠道回调地址为 `/api/v1/payment-notify/alipay|wechat`。未填凭证时接口返回 503，不会假成功。生产环境务必设置 `CITYFLOW_PAYMENT_ALLOW_MOCK_PAY=false`。
-
-真实渠道的退款、对账和结算策略需要在上线前按渠道文档补齐；当前默认 MOCK 只用于本地演示。
-
-## 骑手付费注册（个人经营码，最小实现）
-
-骑手先扫描个人支付宝经营码支付至少 `0.01` 元，再在 `/rider/register` 提交交易号/付款备注。个人经营码没有支付回调，后台管理员在支付宝账单核验后，通过“骑手注册”视图开通账号；Identity 在自己的事务里创建 `RIDER` 账号并标记申请已通过，Task 通过 zRPC 单独创建 `OFFLINE` 骑手履约资料。跨服务失败会补偿回滚：申请回到 `PENDING`，本次创建的账号删除，已写入的 Task 资料归档。资金直接进入经营码，平台不经手，也不支持自动退款。
-
-公开接口为 `POST /api/v1/rider-registrations`；管理员列表与审核接口在 `/api/v1/platform/rider-registrations` 下。
-
-## 当前技术
-
-- go-zero：Gateway（REST）+ Identity / Task / Discovery / Payment / Tracking / Reaction（zRPC）七个独立服务；服务间调用是 zRPC，Gateway 只做公开 REST 入口、页面/静态资源服务和 WSS 代理。
-- GORM + MySQL 8 / InnoDB：用户、商家、骑手、任务和任务事件持久化
-- go-redis：可选的 JWT 账号状态短时缓存；Redis 不可用时查询自动回源 MySQL
-- Repository 接口：隔离内存与 MySQL 存储
-- JWT HS256：角色认证
-- 高德 JS API / Leaflet：地点搜索、骑行路线与位置展示；Discovery 当前走高德在线服务，本地 PostGIS/混合 provider 代码保留但未接入运行路径；复用 Fleet-Ops 地图追踪组件，Redis GEO 保存近期位置，WebSocket 按任务权限推送，Redis 按骑手保存轨迹并由任务事件时间窗查询，OSRM 骑行道路匹配用于展示
-- 消息队列、对象存储：在对应业务能力形成后再引入；PostGIS 桂林图层代码保留，当前未接入 Discovery 的 provider 装配
-
-HTTP 服务配置了请求超时、优雅退出、异常恢复、请求 ID、存活/就绪探针和可调数据库连接池。MySQL 迁移与演示数据初始化使用数据库 advisory lock，避免多个应用实例同时启动时重复初始化。数据库表结构继续由版本化 SQL 迁移维护，GORM 负责记录映射、查询、事务和更新，不在启动时自动改表。应用实例本身不保存登录会话状态；多实例部署需使用同一 `CITYFLOW_JWT_SECRET` 并共享 MySQL。
-
-Redis 既用于近期位置快照/GEO 和按骑手追加的轨迹 ZSET，也缓存账号是否启用；账号状态缓存默认有效期为 5 秒，状态变更时尝试删除缓存；账号状态缓存故障时回源 MySQL；已配置 Redis 时，位置读写故障返回 503，不切换到进程内数据。位置事件目前使用进程内总线，多实例实时广播仍需 Redis Pub/Sub 等共享通道。单个 MySQL 实例仍是可用性瓶颈。真正的多可用区容灾需要在部署层配置 MySQL 主从/托管高可用、备份恢复与负载均衡；Compose 中的单节点 Redis 也不构成生产级高可用。
-
-## 检查
+### 验证
 
 ```powershell
-./scripts/check.ps1
+# 就绪检查：应返回 status=ok
+Invoke-RestMethod http://127.0.0.1:8087/readyz
+
+# 登录并读到演示用户
+$body = @{ email = 'user@cityflow.local'; password = 'cityflow123' } | ConvertTo-Json
+(Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8087/api/v1/auth/login -ContentType 'application/json' -Body $body).user.name
+
+# 静态检查和全量测试
+.\scripts\check.ps1
 ```
 
-手动执行时可运行 `go test -race ./...`、`go vet ./...` 和 `docker compose -f deploy/docker-compose.yml config --quiet`。
+**预期结果**：`/readyz` 返回 `{"status":"ok"}`；登录返回 `林知夏`；`check.ps1` 输出 `All checks passed.` 测试依赖本机 Redis/MySQL，按 `.env` 配置 `CITYFLOW_TEST_REDIS_ADDR` 与 `CITYFLOW_TEST_TRACKING_DSN` 后再跑全量用例。
 
-演示密码和默认 JWT 密钥只适用于本地开发，部署前请替换密钥并关闭演示账号。
+## 十、工程难题
 
-地图、定位和实时订阅由 Discovery / Tracking 服务负责；本地默认使用 Leaflet/OSM，配置高德 Key 后切换为在线地图。
+### 难题一：一个 taskId 既当订单号又当支付号，支付成功却回写不到订单
+
+**现象**：任务支付弹窗提示“可用券查询失败”，因为 `ListOrderCoupons` 把路径里的 taskId 直接查订单；支付侧又出现 `Order.MarkPaid ... order not found`，支付成功和订单状态对不上。
+
+**根因**：任务支付没有建立 taskId 到支付单的映射，支付域还在依赖一个不属于自己的 Order 聚合；客户端金额、支付单和任务报价之间没有唯一约束。
+
+**解决**：删除 Order 回写路径，Payment 直接按 `task_id` 保存支付单；`active_task_id` 生成列加唯一索引保证一任务一活跃支付单；Task 接单前调 `PaymentGate.EnsureClaimable` 回查付款状态；金额只从任务报价取。
+
+**怎么验证**：用演示任务查询 `GET /api/v1/tasks/d5a5.../payment`，支付单和结算单都为 `PAID`；重复建支付单应返回已有/冲突而不是新建第二笔；`go test ./app/payment/... ./app/task/...` 覆盖回调重试和接单门禁。
+
+**代码位置**：`app/payment/application/payment/payment_service.go`、`app/task/application/task/task_service.go`、`internal/migrations/service/payment_001_payment.sql`
+
+### 难题二：任务归属正确却一直 403，WebSocket 被状态大小写拦死
+
+**现象**：骑手 JWT 的 `sub` 与任务 `worker_id` 一致，REST 也能读到任务，但位置流握手持续 403；前端地图一直显示“该任务还没有位置记录”。
+
+**根因**：`CanTrack` 用 `"Open" / "Completed" / "Cancelled"` 比较，而数据库和接口实际是 `OPEN / COMPLETED / CANCELLED`；状态分支完全失效，终态任务也没有被正确拒绝。
+
+**解决**：统一 `strings.ToUpper(item.Status)` 后再判断；显式把 `OPEN`、`COMPLETED`、`CANCELLED` 和无 worker 的任务归为不可订阅；WSS 仍只从 `Sec-WebSocket-Protocol: bearer.<token>` 取身份，不信任频道名。
+
+**怎么验证**：临时把一笔任务置为 `CLAIMED` 后，用骑手令牌连接，WebSocket 状态为 `Open`（101）；把任务标为 `COMPLETED`，同一路径返回 404；真实任务 `6a946...` 的终态订阅不再出现 403。
+
+**代码位置**：`app/tracking/application/tracking/tracking_service.go`、`app/tracking/cmd/rpc/internal/stream/stream.go`
+
+### 难题三：开放池要“只看已付款任务”，但付款状态在另一个服务
+
+**现象**：未支付任务 `86a4708d...` 曾出现在骑手附近列表，骑手能点“接下任务”，服务端才返回 409；如果直接在前端隐藏，换个入口仍然能绕过。
+
+**根因**：开放池由 Task 生成，付款状态由 Payment 拥有；列表查询没有回查 Payment，任务状态和付款状态是两套事实。
+
+**解决**：Rider 的 `status=OPEN` 改走 `Task.ListOpenTasks`；Task 对每个候选调 `OpenPoolVisible`，内部用 `PaymentGate.EnsureClaimable` 判断；不可见任务直接从列表过滤。Payment 暂时故障时记录日志并 fail-open（保留任务可见），但实际接单仍走 Payment 强校验，避免因支付服务抖动把整个开放池清空。
+
+**怎么验证**：骑手 `GET /api/v1/tasks?status=OPEN&limit=50` 返回空数组，未支付的 `86a4708d...` 不再出现；直接 `POST /tasks/86a.../claim` 返回 409。
+
+**代码位置**：`app/gateway/cmd/api/internal/handler/tasks.go`、`app/task/application/task/task_service.go`、`app/task/application/rider/rider_service.go`
+
+### 难题四：完成 3 单却显示 0 单，投影列和事实表各说各话
+
+**现象**：骑手完成多笔任务后，`/api/v1/riders/me` 仍返回 `completed_tasks:0`；任务卡显示“0 条评价”，下方评价区却有 1 条内容。
+
+**根因**：旧 `rider_profiles.completed_tasks` 被当作只读投影，没有事件流维护；评价数也没有从 `rider_feedback` 计算，页面不同区域读了两个来源。
+
+**解决**：`RiderForUser`、`GetRider`、`ListRiders` 都按 `tasks.status='COMPLETED'` 聚合覆盖 `CompletedTasks`，不再信任旧列；任务骑手接口和公开骑手资料从反馈事实计算 `review_count`。
+
+**怎么验证**：`GET /api/v1/riders/me` 返回 `completed_tasks:3`；`GET /api/v1/tasks/6a946.../rider` 返回 `completed_tasks:3, review_count:1`，并带最近的“送得很快，沟通清楚。”评价。
+
+**代码位置**：`app/task/internal/adapter/mysql/rider_repository.go`、`app/task/application/rider/rider_service.go`
+
+### 难题五：两个取件点都已取件，整单却还停在 CLAIMED
+
+**现象**：双取件点任务两个 `PICKUP_n_PICKED_UP` 事件都完成后，整单仍是 `CLAIMED`，骑手必须再手动点“到达取件点”和“开始配送”，页面才出现“确认送达”。
+
+**根因**：取件点状态和整单状态是两套独立状态机，`AdvancePickup` 只改取件点，不根据全部取件点推导整单状态。
+
+**解决**：`AdvancePickup` 在同一事务里检查所有取件点：全部 `PICKED_UP` 则整单推进到 `PROCESSING`，否则有 `ARRIVED` 则推进到 `ARRIVED`；推导结果与当前状态相同时不重复发事件。
+
+**怎么验证**：复核时创建一笔双取件点任务，按顺序提交四个取件动作，接口依次返回 `ARRIVED → ARRIVED → ARRIVED → PROCESSING`；事件流自动写入 `CLAIMED→ARRIVED` 和 `ARRIVED→PROCESSING`，不需要再手动更新整单状态；`go test ./app/task/...` 覆盖双取件点场景。
+
+**代码位置**：`app/task/internal/adapter/mysql/task_repository.go`
+
+## 十一、当前边界
+
+- 支付默认使用 `MOCK` 渠道，支付宝/微信适配器虽然已按渠道接口接入，但需要真实商户凭证和公网 HTTPS 回调才能用于生产；当前不构成真实资金流，也不自建资金池。
+- 位置实时广播是单 Gateway 进程内的事件总线；多个 API 实例同时运行时，需要 Redis Pub/Sub 或其他桥接，当前没有做跨实例推送。
+- 开放池的付款可见性过滤是逐任务调用 Payment，分页一页最多会产生一页数量的 RPC；没有批量查询接口，当前按校园规模可以接受，任务量上来后需要改成批量校验。
+
+## 十二、文档
+
+| 文档 | 内容 |
+|---|---|
+| [`docs/DESIGN-CONSTRAINTS.md`](docs/DESIGN-CONSTRAINTS.md) | 最高优先级工程约束、依赖方向和数据所有权 |
+| [`docs/architecture/microservices.md`](docs/architecture/microservices.md) | 九个服务的边界、同步 RPC 与异步事件的分工 |
+| [`docs/architecture/payment.md`](docs/architecture/payment.md) | 支付、退款、结算、对账和渠道适配 |
+| [`docs/architecture/map-tracking.md`](docs/architecture/map-tracking.md) | 地图 provider、坐标转换、位置流和轨迹归档 |
+| [`docs/architecture/reactions.md`](docs/architecture/reactions.md) | 点赞/收藏的 Redis 热状态与绝对计数投影 |
+| [`docs/development/local-development.md`](docs/development/local-development.md) | 本地启动、契约生成和调试 |
+| [`docs/api/http-api.md`](docs/api/http-api.md) | HTTP 接口、状态流转和错误语义 |
+| [`docs/qa/CityFlow-四端实测缺陷报告-2026-11-22.md`](docs/qa/CityFlow-四端实测缺陷报告-2026-11-22.md) | 四端实测缺陷、复核状态和验证证据 |

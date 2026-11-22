@@ -9,32 +9,34 @@ import (
 	"strings"
 	"time"
 
+	authservice "cityflow/app/identity/application/auth"
+	riderregservice "cityflow/app/identity/application/riderreg"
+	"cityflow/app/identity/application/user"
 	"cityflow/app/identity/cmd/rpc/internal/config"
-	taskclient "cityflow/app/task/cmd/rpc/taskclient"
-	"cityflow/internal/application/repository"
-	"cityflow/internal/application/service"
-	"cityflow/internal/infrastructure/cache"
-	"cityflow/internal/infrastructure/memory"
-	"cityflow/internal/infrastructure/mq"
-	mysqlstore "cityflow/internal/infrastructure/mysql"
-
-	"github.com/zeromicro/go-zero/zrpc"
+	identitymysql "cityflow/app/identity/internal/adapter/mysql"
+	identityredis "cityflow/app/identity/internal/adapter/redis"
+	"cityflow/app/identity/repository"
+	"cityflow/internal/common/outbox"
+	"cityflow/internal/platform/cache"
+	"cityflow/internal/platform/mq"
+	platformmysql "cityflow/internal/platform/mysql"
+	outboxservice "cityflow/internal/platform/outboxservice"
+	"cityflow/internal/platform/xxljob"
 )
 
 type ServiceContext struct {
-	Config        config.Config
-	Auth          *service.AuthService
-	Accounts      repository.AuthRepository
-	Refresh       service.RefreshStore
-	Secret        []byte
-	Users         *service.UserService
-	Riders        *service.RiderRegistrationService
-	Task          taskclient.Task
-	EventsEnabled bool
-	Relay         *service.OutboxRelay
-	publisher     *mq.Publisher
-	closeFn       func() error
-	pingFn        func(context.Context) error
+	Config    config.Config
+	Auth      *authservice.AuthService
+	Refresh   authservice.RefreshStore
+	Secret    []byte
+	Users     *userservice.UserService
+	Riders    *riderregservice.RiderRegistrationService
+	Relay     *outboxservice.OutboxRelay
+	XXLJob    *xxljob.Runtime
+	accounts  repository.AuthRepository
+	publisher *mq.Publisher
+	closeFn   func() error
+	pingFn    func(context.Context) error
 }
 
 func NewServiceContext(c config.Config) (*ServiceContext, error) {
@@ -43,8 +45,7 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 		secret = strings.TrimSpace(os.Getenv("CITYFLOW_JWT_SECRET"))
 	}
 	if secret == "" {
-		secret = "CHANGE_ME_JWT_SECRET"
-		log.Printf("warning: JWT secret is not set; using development secret")
+		log.Fatalf("JWT secret is not configured: set CITYFLOW_JWT_SECRET in .env")
 	}
 
 	dsn := strings.TrimSpace(c.DataSource)
@@ -54,67 +55,76 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 
 	var (
 		accounts    repository.AuthRepository
-		outboxStore repository.OutboxStore
+		outboxStore outbox.Store
 		closeFn     = func() error { return nil }
 		pingFn      = func(context.Context) error { return nil }
 	)
 	if dsn == "" {
-		store, err := memory.NewStore()
-		if err != nil {
-			return nil, err
-		}
-		accounts = store
-		closeFn = store.Close
-		pingFn = func(context.Context) error { return nil }
-	} else {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		store, err := mysqlstore.Open(ctx, dsn)
-		if err != nil {
-			cancel()
-			return nil, err
-		}
-		if err := store.MigrateService(ctx, "identity"); err != nil {
-			cancel()
-			store.Close()
-			return nil, err
-		}
-		if c.SeedDemo && strings.TrimSpace(os.Getenv("CITYFLOW_SEED_DEMO")) != "false" {
-			if err := store.SeedDemoIdentity(ctx); err != nil {
-				cancel()
-				store.Close()
-				return nil, err
-			}
-		}
-		cancel()
-		accounts = store
-		outboxStore = mysqlstore.IdentityOutboxStore{Store: store}
-		closeFn = func() error { store.Close(); return nil }
-		pingFn = store.Ping
+		return nil, errors.New("IDENTITY_DATABASE_DSN is required")
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	db, err := platformmysql.Open(ctx, dsn)
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+	if err := platformmysql.MigrateService(ctx, db, "identity"); err != nil {
+		cancel()
+		_ = db.Close()
+		return nil, err
+	}
+	store := identitymysql.New(db)
+	seedDemo := c.SeedDemo
+	if raw := strings.TrimSpace(os.Getenv("CITYFLOW_SEED_DEMO")); raw != "" {
+		seedDemo = raw == "true"
+	}
+	if seedDemo {
+		if !isDevMode(c.Mode) {
+			cancel()
+			_ = db.Close()
+			return nil, errors.New("demo seeding is only allowed in dev/test mode")
+		}
+		demoPassword := strings.TrimSpace(os.Getenv("CITYFLOW_DEMO_PASSWORD"))
+		if len(demoPassword) < 8 {
+			cancel()
+			_ = db.Close()
+			return nil, errors.New("CITYFLOW_DEMO_PASSWORD must be at least 8 characters when CITYFLOW_SEED_DEMO=true")
+		}
+		if err := store.SeedDemoIdentity(ctx, demoPassword); err != nil {
+			cancel()
+			_ = db.Close()
+			return nil, err
+		}
+	}
+	cancel()
+	accounts = store
+	outboxStore = identitymysql.OutboxStore{Store: store}
+	closeFn = db.Close
+	pingFn = db.Ping
 
 	// Identity owns accounts only. Merchant and rider profile ownership moves
 	// out of this service; the methods that used them are not exposed by the
 	// Identity RPC.
-	authService := service.NewAuthService(accounts, nil, nil, []byte(secret))
+	authService := authservice.NewAuthService(accounts, []byte(secret))
 
-	var users *service.UserService
+	var users *userservice.UserService
 	if managed, ok := accounts.(repository.UserRepository); ok {
-		users = service.NewUserService(accounts, managed, nil)
-		// Local/demo builds expose the reset token so the browser reset flow can
-		// be completed without an email provider. Production can disable it with
-		// CITYFLOW_EXPOSE_RESET_TOKEN=false, matching the previous HTTP behavior.
-		users = users.WithResetTokenExposure(strings.TrimSpace(os.Getenv("CITYFLOW_EXPOSE_RESET_TOKEN")) != "false")
+		users = userservice.NewUserService(accounts, managed)
+		// Returning the reset code to the caller is a local/demo convenience only.
+		// It is opt-in and refused outside dev/test: anyone who can reach the
+		// public reset endpoint could otherwise take over any account.
+		exposeReset := strings.TrimSpace(os.Getenv("CITYFLOW_EXPOSE_RESET_TOKEN")) == "true"
+		if exposeReset && !isDevMode(c.Mode) {
+			log.Fatalf("CITYFLOW_EXPOSE_RESET_TOKEN=true is only allowed in dev/test mode")
+		}
+		users = users.WithResetTokenExposure(exposeReset)
 	}
-	var registrations *service.RiderRegistrationService
+	var registrations *riderregservice.RiderRegistrationService
 	if regRepo, ok := accounts.(repository.RiderRegistrationRepository); ok {
-		registrations = service.NewRiderRegistrationService(regRepo)
-	}
-	var taskClient taskclient.Task
-	if len(c.TaskRpc.Endpoints) > 0 || c.TaskRpc.Target != "" {
-		taskClient = taskclient.NewTask(zrpc.MustNewClient(c.TaskRpc))
+		registrations = riderregservice.NewRiderRegistrationService(regRepo)
 	}
 
-	var refresh service.RefreshStore
+	var refresh authservice.RefreshStore
 	var redis *cache.Redis
 	redisAddr := strings.TrimSpace(c.RedisAddr)
 	if redisAddr == "" {
@@ -132,7 +142,7 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 			}
 		}
 		redis = cache.NewRedis(redisAddr, redisPassword, redisDB)
-		refresh = redis
+		refresh = identityredis.NewRefreshStore(redis)
 		previousClose := closeFn
 		closeFn = func() error {
 			err := previousClose()
@@ -151,7 +161,7 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 	}
 
 	var publisher *mq.Publisher
-	var relay *service.OutboxRelay
+	var relay *outboxservice.OutboxRelay
 	mqURL := strings.TrimSpace(c.RabbitMQURL)
 	if mqURL == "" {
 		mqURL = strings.TrimSpace(os.Getenv("RABBITMQ_URL"))
@@ -162,11 +172,11 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 		probeErr := publisher.Probe(probeCtx)
 		cancelProbe()
 		if probeErr != nil {
-			log.Printf("warning: RabbitMQ unavailable (%v); rider approval falls back to synchronous provisioning", probeErr)
+			log.Printf("warning: RabbitMQ unavailable (%v); rider approval events will stay pending", probeErr)
 			_ = publisher.Close()
 			publisher = nil
 		} else {
-			relay = service.NewOutboxRelay(outboxStore, publisher, 2*time.Second, 50)
+			relay = outboxservice.NewOutboxRelay(outboxStore, publisher, 2*time.Second, 50)
 			previousClose := closeFn
 			closeFn = func() error {
 				err := previousClose()
@@ -180,24 +190,41 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 		log.Printf("warning: RABBITMQ_URL is empty; rider approval outbox will stay pending")
 	}
 
+	jobRuntime, err := xxljob.NewRuntime(c.XXLJob.WithEnv("IDENTITY"), nil)
+	if err != nil {
+		_ = closeFn()
+		return nil, err
+	}
+
 	return &ServiceContext{
-		Config:        c,
-		Auth:          authService,
-		Accounts:      accounts,
-		Refresh:       refresh,
-		Secret:        []byte(secret),
-		Users:         users,
-		Riders:        registrations,
-		Task:          taskClient,
-		EventsEnabled: relay != nil,
-		Relay:         relay,
-		publisher:     publisher,
-		closeFn:       closeFn,
-		pingFn:        pingFn,
+		Config:    c,
+		Auth:      authService,
+		Refresh:   refresh,
+		Secret:    []byte(secret),
+		Users:     users,
+		Riders:    registrations,
+		Relay:     relay,
+		XXLJob:    jobRuntime,
+		accounts:  accounts,
+		publisher: publisher,
+		closeFn:   closeFn,
+		pingFn:    pingFn,
 	}, nil
 }
 
+// AccountActive is the narrow identity check the RPC interceptor needs. It
+// deliberately does not expose the repository to transport code.
+func (s *ServiceContext) AccountActive(ctx context.Context, subject, _ string) (bool, error) {
+	if s.accounts == nil {
+		return false, errors.New("identity account store is unavailable")
+	}
+	return s.accounts.IsActive(ctx, subject)
+}
+
 func (s *ServiceContext) Close() error {
+	if s.XXLJob != nil {
+		s.XXLJob.Stop()
+	}
 	if s.closeFn == nil {
 		return nil
 	}
@@ -212,4 +239,13 @@ func (s *ServiceContext) Ping(ctx context.Context) error {
 		return errors.Join(errors.New("identity database unavailable"), err)
 	}
 	return nil
+}
+
+func isDevMode(mode string) bool {
+	switch strings.ToLower(strings.TrimSpace(mode)) {
+	case "", "dev", "test":
+		return true
+	default:
+		return false
+	}
 }
